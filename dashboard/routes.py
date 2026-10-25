@@ -29,7 +29,9 @@ dashboard_bp = Blueprint("dashboard", __name__)
 
 
 def _is_localhost() -> bool:
-    """Security check ensuring control endpoints are only invoked from localhost."""
+    """Security check ensuring control endpoints are invoked by authenticated users or localhost."""
+    if session.get("user_id"):
+        return True
     remote = request.remote_addr
     return remote in ("127.0.0.1", "::1", "localhost", None)
 
