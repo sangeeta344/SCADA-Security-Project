@@ -1,0 +1,47 @@
+{
+  "model_name": "sensor_anomaly_detector",
+  "model_type": "IsolationForest",
+  "dataset_name": "scada_sensor_dataset_200_rows.csv",
+  "total_samples": 200,
+  "features": [
+    "temperature_c",
+    "pressure_bar",
+    "water_level_mm",
+    "flow_rate_lpm"
+  ],
+  "contamination_parameter": 0.05,
+  "baseline_detected_anomalies": 10,
+  "baseline_detected_normals": 190,
+  "anomaly_rate_percent": 5.0,
+  "score_mean": 0.0607,
+  "score_min": -0.0614,
+  "score_max": 0.1228,
+  "operational_threshold": 0.0,
+  "feature_statistics": {
+    "temperature_c": {
+      "min": 25.73,
+      "mean": 28.02,
+      "max": 30.4,
+      "std": 1.275905432767975
+    },
+    "pressure_bar": {
+      "min": 2.196,
+      "mean": 2.512,
+      "max": 2.821,
+      "std": 0.16144233689061716
+    },
+    "water_level_mm": {
+      "min": 845.1,
+      "mean": 903.2875,
+      "max": 954.7,
+      "std": 32.76216094366324
+    },
+    "flow_rate_lpm": {
+      "min": 28.24,
+      "mean": 35.16915,
+      "max": 41.13,
+      "std": 3.5486092933831737
+    }
+  },
+  "unsupervised_notice": "Unsupervised model trained on baseline normal operational telemetry."
+}

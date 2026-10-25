@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block page_title %}Machine Learning Models & Dataset Telemetry Status{% endblock %}
+
+{% block content %}
+<!-- Datasets Inspection Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Network Dataset -->
+    <div class="col-lg-6">
+        <div class="card card-scada h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="text-info mb-0"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Network Dataset (TON_IoT)</h6>
+                <span class="badge bg-success">Loaded & Verified</span>
+            </div>
+            <div class="mono-text small text-muted mb-2">dataset/train_test_network.csv (28.5 MB)</div>
+            <div class="row g-2 mb-2 text-center" style="font-size: 0.8rem;">
+                <div class="col-4 p-2 bg-dark rounded border border-secondary">
+                    <div class="text-muted">Total Records</div>
+                    <div class="mono-text fw-bold text-light">211,043</div>
+                </div>
+                <div class="col-4 p-2 bg-dark rounded border border-secondary">
+                    <div class="text-muted">Features</div>
+                    <div class="mono-text fw-bold text-light">44 cols</div>
+                </div>
+                <div class="col-4 p-2 bg-dark rounded border border-secondary">
+                    <div class="text-muted">Target Classes</div>
+                    <div class="mono-text fw-bold text-info">10 Classes</div>
+                </div>
+            </div>
+            <div class="small text-muted">
+                <strong>Target Column:</strong> <code>type</code> (Multiclass: normal, backdoor, ddos, dos, injection, mitm, password, ransomware, scanning, xss).
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensor Dataset -->
+    <div class="col-lg-6">
+        <div class="card card-scada h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="text-info mb-0"><i class="bi bi-speedometer2 me-2"></i>SCADA Sensor Telemetry Dataset</h6>
+                <span class="badge bg-success">Loaded & Verified</span>
+            </div>
+            <div class="mono-text small text-muted mb-2">dataset/scada_sensor_dataset_200_rows.csv (13.6 KB)</div>
+            <div class="row g-2 mb-2 text-center" style="font-size: 0.8rem;">
+                <div class="col-4 p-2 bg-dark rounded border border-secondary">
+                    <div class="text-muted">Total Samples</div>
+                    <div class="mono-text fw-bold text-light">200 rows</div>
+                </div>
+                <div class="col-4 p-2 bg-dark rounded border border-secondary">
+                    <div class="text-muted">Telemetry Vars</div>
+                    <div class="mono-text fw-bold text-light">4 Vars</div>
+                </div>
+                <div class="col-4 p-2 bg-dark rounded border border-secondary">
+                    <div class="text-muted">Status</div>
+                    <div class="mono-text fw-bold text-success">NORMAL (100%)</div>
+                </div>
+            </div>
+            <div class="small text-muted">
+                <strong>Variables:</strong> Temperature (°C), Pressure (bar), Water Level (mm), Flow Rate (L/min).
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs for Deep Technical Exploration -->
+<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="pills-net-tab" data-bs-toggle="pill" data-bs-target="#pills-net" type="button" role="tab">
+            <i class="bi bi-shield-shaded me-1"></i> 1. Network Intrusion Detection
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pills-sensor-tab" data-bs-toggle="pill" data-bs-target="#pills-sensor" type="button" role="tab">
+            <i class="bi bi-activity me-1"></i> 2. Sensor Anomaly Detection
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pills-quantum-tab" data-bs-toggle="pill" data-bs-target="#pills-quantum" type="button" role="tab">
+            <i class="bi bi-key me-1"></i> 3. BB84 & QBER Parameters
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pills-proto-tab" data-bs-toggle="pill" data-bs-target="#pills-proto" type="button" role="tab">
+            <i class="bi bi-diagram-2 me-1"></i> 4. Modbus & MQTT Protocols
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="pills-tabContent">
+    <!-- TAB 1: Network Intrusion Model -->
+    <div class="tab-pane fade show active" id="pills-net" role="tabpanel">
+        {% set net = eval_report.network_intrusion_model %}
+        {% if net.accuracy %}
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">Model Accuracy</div>
+                    <div class="metric-value text-success">{{ (net.accuracy * 100) | round(2) }}%</div>
+                    <small class="text-muted">Held-out test split</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">Weighted Precision</div>
+                    <div class="metric-value text-info">{{ (net.precision * 100) | round(2) }}%</div>
+                    <small class="text-muted">Minimizes false positives</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">Weighted Recall</div>
+                    <div class="metric-value text-primary">{{ (net.recall * 100) | round(2) }}%</div>
+                    <small class="text-muted">Intrusion catch rate</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">F1-Score</div>
+                    <div class="metric-value text-light">{{ (net.f1_score * 100) | round(2) }}%</div>
+                    <small class="text-muted">Harmonic balance</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-scada p-3">
+            <h6 class="text-light mb-3"><i class="bi bi-table text-info me-2"></i>Per-Class Performance Breakdown</h6>
+            <div class="table-responsive">
+                <table class="table table-scada">
+                    <thead>
+                        <tr>
+                            <th>Attack Category</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>Test Support</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cls_name, cls_data in net.classification_report.items() %}
+                        {% if cls_name not in ['accuracy', 'macro avg', 'weighted avg'] %}
+                        <tr>
+                            <td class="fw-bold text-light">{{ cls_name | upper }}</td>
+                            <td class="mono-text">{{ (cls_data.precision * 100) | round(1) }}%</td>
+                            <td class="mono-text">{{ (cls_data.recall * 100) | round(1) }}%</td>
+                            <td class="mono-text">{{ (cls_data['f1-score'] * 100) | round(1) }}%</td>
+                            <td class="mono-text text-muted">{{ cls_data.support }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            Model not trained yet. Run <code>python -m ml_detection.network_train</code>.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- TAB 2: Sensor Anomaly Model -->
+    <div class="tab-pane fade" id="pills-sensor" role="tabpanel">
+        {% set sens = eval_report.sensor_anomaly_model %}
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">Algorithm</div>
+                    <div class="fs-4 text-info fw-bold mt-2">Isolation Forest</div>
+                    <small class="text-muted">Unsupervised Tree Ensemble</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">Contamination Hyperparameter</div>
+                    <div class="fs-4 text-warning fw-bold mt-2">5.0%</div>
+                    <small class="text-muted">Expected outlier budget</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-scada p-3 text-center">
+                    <div class="metric-label">Operational Boundary</div>
+                    <div class="fs-4 text-light fw-bold mt-2">&lt; 0.00 Anomaly</div>
+                    <small class="text-muted">Decision function threshold</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-scada p-3">
+            <h6 class="text-light mb-2"><i class="bi bi-thermometer-high text-info me-2"></i>Monitored Telemetry Variables</h6>
+            <div class="table-responsive">
+                <table class="table table-scada">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Min Observed</th>
+                            <th>Mean Operational</th>
+                            <th>Max Observed</th>
+                            <th>Units</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Core Temperature</td>
+                            <td class="mono-text">25.73</td>
+                            <td class="mono-text">28.02</td>
+                            <td class="mono-text">30.40</td>
+                            <td>°C</td>
+                        </tr>
+                        <tr>
+                            <td>Line Pressure</td>
+                            <td class="mono-text">2.20</td>
+                            <td class="mono-text">2.51</td>
+                            <td class="mono-text">2.82</td>
+                            <td>bar</td>
+                        </tr>
+                        <tr>
+                            <td>Water Tank Level</td>
+                            <td class="mono-text">845.1</td>
+                            <td class="mono-text">903.3</td>
+                            <td class="mono-text">954.7</td>
+                            <td>mm</td>
+                        </tr>
+                        <tr>
+                            <td>Flow Rate</td>
+                            <td class="mono-text">28.24</td>
+                            <td class="mono-text">35.17</td>
+                            <td class="mono-text">41.13</td>
+                            <td>L/min</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: Quantum BB84 Details -->
+    <div class="tab-pane fade" id="pills-quantum" role="tabpanel">
+        <div class="card card-scada p-3">
+            <h6 class="text-light mb-3"><i class="bi bi-shield-check text-info me-2"></i>BB84 Protocol Specification & Security Bounds</h6>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <strong>Basis Encoding:</strong> Rectilinear (0°, 90°) & Diagonal (45°, 135°)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <strong>Standard QBER Threshold:</strong> 11.0% (theoretical Shor-Preskill limit)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <strong>Disclosed Test Sample:</strong> 33% of sifted bits (excluded from final key)
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <strong>Key Derivation Function:</strong> HKDF-SHA256 (RFC 5869)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <strong>Symmetric Cipher:</strong> AES-256-GCM (12-byte random nonce, 16-byte auth tag)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <strong>Eve Detection:</strong> Intercept-resend induces expected 25% error on sifted sample
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: Protocols Details -->
+    <div class="tab-pane fade" id="pills-proto" role="tabpanel">
+        <div class="card card-scada p-3">
+            <h6 class="text-light mb-3"><i class="bi bi-hdd-network text-info me-2"></i>Modbus TCP & MQTT Protocol Mappings</h6>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <h6 class="text-info small">Modbus TCP Holding Registers (127.0.0.1:5020)</h6>
+                    <ul class="list-group list-group-flush bg-transparent small">
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 0</code>: Temperature (Scale Factor: x100, °C)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 1</code>: Pressure (Scale Factor: x1000, bar)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 2</code>: Water Level (Scale Factor: x10, mm)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 3</code>: Flow Rate (Scale Factor: x100, L/min)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 4</code>: Pump State (0 = OFF, 1 = ON)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 5</code>: Valve State (0 = CLOSED, 1 = OPEN)
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>Reg 6</code>: Status Code (1=NORMAL, 2=WARNING, 3=ALARM, 4=ATTACK)
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-info small">MQTT Topics Structure (127.0.0.1:1883)</h6>
+                    <ul class="list-group list-group-flush bg-transparent small">
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>scada/rtu1/telemetry</code>: Periodic RTU sensor telemetry
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>scada/rtu1/status</code>: RTU operational status heartbeat
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>scada/plc1/status</code>: PLC control decisions & actuator states
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>scada/security/alerts</code>: ML intrusion alarms and classifications
+                        </li>
+                        <li class="list-group-item bg-transparent text-light border-secondary">
+                            <code>scada/quantum/status</code>: BB84 QKD session parameters & QBER
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

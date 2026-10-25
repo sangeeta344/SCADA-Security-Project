@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block page_title %}SCADA Live Network Traffic Monitor{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="disclaimer-banner d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-info-circle-fill text-info me-2"></i>
+                <strong>Continuous Protocol Inspection:</strong> Modbus TCP frame analysis on port 5020 and MQTT telemetry on port 1883 evaluated against Random Forest IDS.
+            </div>
+            <span class="status-pill pill-info" id="traffic-stream-status">
+                <i class="bi bi-broadcast"></i> Live Ingestion
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filtering Controls -->
+<div class="card card-scada mb-4 p-3">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="traffic-search-input" class="form-control bg-dark text-light border-secondary" placeholder="Search Device, Protocol, or Prediction...">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select id="protocol-filter" class="form-select bg-dark text-light border-secondary">
+                <option value="">All Protocols (Modbus & MQTT)</option>
+                <option value="MODBUS_TCP">Modbus TCP</option>
+                <option value="MQTT">MQTT</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select id="class-filter" class="form-select bg-dark text-light border-secondary">
+                <option value="">All Predictions (Normal & Attacks)</option>
+                <option value="normal">Normal Only</option>
+                <option value="dos">DoS Attacks</option>
+                <option value="injection">Data Injection</option>
+                <option value="mitm">MITM Tampering</option>
+                <option value="replay">Replay Attacks</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-outline-info w-100" onclick="fetchTrafficEvents();">
+                <i class="bi bi-arrow-repeat"></i> Update
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Network Traffic Table -->
+<div class="card card-scada">
+    <div class="card-header-scada">
+        <span class="text-light fw-semibold"><i class="bi bi-hdd-network text-info me-2"></i>Live Protocol Observation Stream</span>
+        <span class="text-light small" id="traffic-table-count">Showing latest 50 events</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-scada" id="network-traffic-table">
+            <thead>
+                <tr>
+                    <th>Event ID</th>
+                    <th>Timestamp</th>
+                    <th>Source Device</th>
+                    <th>Target Device</th>
+                    <th>Protocol</th>
+                    <th>Packet Rate</th>
+                    <th>Payload Bytes</th>
+                    <th>Modbus Fn</th>
+                    <th>ML Prediction</th>
+                    <th>Confidence</th>
+                    <th>Security Status</th>
+                </tr>
+            </thead>
+            <tbody id="traffic-tbody">
+                {% for ev in events %}
+                <tr data-proto="{{ ev.protocol }}" data-pred="{{ ev.predicted_class }}">
+                    <td class="mono-text text-info">{{ ev.event_id }}</td>
+                    <td class="mono-text" style="color: #cbd5e1;">{{ ev.timestamp }}</td>
+                    <td class="mono-text text-light">{{ ev.src_device }}</td>
+                    <td class="mono-text text-light">{{ ev.dst_device }}</td>
+                    <td>
+                        <span class="badge {% if ev.protocol == 'MODBUS_TCP' %}bg-primary{% else %}bg-info text-dark{% endif %}">
+                            {{ ev.protocol }}
+                        </span>
+                    </td>
+                    <td class="mono-text text-light">{{ ev.packet_rate }} pkt/s</td>
+                    <td class="mono-text text-light">{{ ev.payload_length }} B</td>
+                    <td class="mono-text text-warning">{{ ev.function_code or '-' }}</td>
+                    <td>
+                        <span class="badge {% if ev.predicted_class == 'normal' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ ev.predicted_class | upper }}
+                        </span>
+                    </td>
+                    <td class="mono-text text-light">{{ (ev.confidence * 100) | round(1) }}%</td>
+                    <td>
+                        {% if ev.predicted_class == 'normal' %}
+                        <span class="status-pill pill-success"><i class="bi bi-check"></i> Passed</span>
+                        {% else %}
+                        <span class="status-pill pill-danger"><i class="bi bi-exclamation"></i> Flagged</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" class="text-center text-muted py-4">No network traffic events recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTrafficFiltering();
+        startTrafficAutoRefresh(3000);
+    });
+</script>
+{% endblock %}

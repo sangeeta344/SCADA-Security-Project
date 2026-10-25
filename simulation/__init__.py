@@ -1,0 +1,1 @@
+"""Industrial system simulation package."""

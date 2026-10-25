@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SCADA Intrusion Detection & Quantum Security{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Left Sidebar -->
+            <div class="col-lg-2 col-md-3 sidebar">
+                <div class="brand-title mb-1">
+                    <i class="bi bi-shield-lock-fill text-info"></i>
+                    <span>SCADA SHIELD</span>
+                </div>
+                <div class="brand-subtitle mb-4">ML IDS + BB84 QKD SYSTEM</div>
+
+                <ul class="nav flex-column mb-auto">
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard.overview') }}" class="nav-link {% if active_page == 'overview' %}active{% endif %}">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                            <span>System Overview</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard.network_monitor') }}" class="nav-link {% if active_page == 'network_monitor' %}active{% endif %}">
+                            <i class="bi bi-activity"></i>
+                            <span>Network Monitor</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard.attack_alerts') }}" class="nav-link {% if active_page == 'attack_alerts' %}active{% endif %}">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>Attack Detection</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard.quantum_security') }}" class="nav-link {% if active_page == 'quantum_security' %}active{% endif %}">
+                            <i class="bi bi-key-fill"></i>
+                            <span>Quantum BB84</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard.model_metrics') }}" class="nav-link {% if active_page == 'model_metrics' %}active{% endif %}">
+                            <i class="bi bi-cpu-fill"></i>
+                            <span>ML & Datasets</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <hr class="border-secondary my-4">
+
+                <div class="px-2">
+                    <small class="text-muted d-block mb-2 text-uppercase" style="font-size: 0.7rem;">Active Services</small>
+                    <div class="mb-1 d-flex justify-content-between align-items-center">
+                        <span style="font-size: 0.78rem;">Modbus TCP:</span>
+                        <span class="badge bg-success" id="badge-modbus-status">ACTIVE :5020</span>
+                    </div>
+                    <div class="mb-1 d-flex justify-content-between align-items-center">
+                        <span style="font-size: 0.78rem;">MQTT Broker:</span>
+                        <span class="badge bg-warning text-dark" id="badge-mqtt-status">STANDBY :1883</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size: 0.78rem;">Encryption:</span>
+                        <span class="badge bg-info text-dark" id="badge-crypto-status">AES-256-GCM</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 px-2 text-muted" style="font-size: 0.7rem;">
+                    {% if session.get('user_email') %}
+                    <div class="text-truncate mb-1">Operator: <strong class="text-info">{{ session.get('user_email') }}</strong></div>
+                    {% endif %}
+                    <div>Host: <code>127.0.0.1:5000</code></div>
+                    <div>SCADA Security Lab Prototype</div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="col-lg-10 col-md-9">
+                <!-- Top Navbar -->
+                <nav class="top-navbar d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-light fw-bold">{% block page_title %}Dashboard{% endblock %}</span>
+                        <span class="badge bg-dark border border-secondary text-info mono-text" id="live-clock">--:--:--</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        {% if session.get('user_id') %}
+                        <div class="d-flex align-items-center me-2 text-secondary small d-none d-sm-flex">
+                            <i class="bi bi-person-circle text-info me-1 fs-6"></i>
+                            <span class="text-light fw-semibold me-1">{{ session.get('username', 'Operator') }}</span>
+                            <span class="badge bg-secondary text-light ms-1" style="font-size: 0.7rem;">{{ session.get('user_role', 'Operator') }}</span>
+                        </div>
+                        <a href="{{ url_for('dashboard.logout') }}" class="btn btn-sm btn-outline-danger me-1" title="Sign Out">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-info" onclick="window.location.reload();">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                        <span class="status-pill pill-info" id="global-system-status">
+                            <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> System Running
+                        </span>
+                    </div>
+                </nav>
+
+                <!-- Page Body -->
+                <div class="p-4">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

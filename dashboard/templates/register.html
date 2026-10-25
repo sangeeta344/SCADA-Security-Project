@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCADA Shield | Register Operator Account</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 20%, #162244 0%, #0a0f1e 70%);
+        }
+        .auth-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            max-width: 480px;
+            width: 100%;
+            padding: 2.2rem;
+            position: relative;
+        }
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--status-success), var(--accent-cyan));
+            border-radius: 12px 12px 0 0;
+        }
+        .form-control, .form-select {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: var(--bg-secondary);
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.25rem rgba(0, 210, 255, 0.2);
+        }
+        .form-control::placeholder {
+            color: #6c7d93;
+        }
+        .input-group-text {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+        .brand-icon {
+            font-size: 2.8rem;
+            color: var(--status-success);
+            filter: drop-shadow(0 0 12px rgba(0, 245, 212, 0.4));
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+                <div class="auth-card">
+                    <!-- Brand Header -->
+                    <div class="text-center mb-4">
+                        <div class="brand-icon mb-2">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <h4 class="fw-bold text-light mb-1" style="letter-spacing: 0.5px;">OPERATOR REGISTRATION</h4>
+                        <div class="text-muted small text-uppercase" style="letter-spacing: 1.2px; font-size: 0.72rem;">
+                            SCADA Shield &bull; User Account Setup
+                        </div>
+                        <div class="mt-2">
+                            <span class="status-pill pill-success">
+                                <i class="bi bi-shield-check" style="font-size: 0.65rem;"></i> Role-Based Access Control
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show py-2 px-3 small" role="alert">
+                                    <i class="bi {% if category == 'success' %}bi-check-circle-fill{% elif category == 'danger' or category == 'error' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} me-1"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close btn-close-white p-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Registration Form -->
+                    <form method="POST" action="{{ url_for('dashboard.register') }}">
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-medium">Full Name / Operator Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                <input type="text" name="username" class="form-control" required 
+                                       placeholder="e.g. John Doe" 
+                                       value="{{ username or '' }}" autofocus>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-medium">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                <input type="email" name="email" class="form-control" required 
+                                       placeholder="name@company.com" 
+                                       value="{{ email or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-medium">System Role</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-briefcase-fill"></i></span>
+                                <select name="role" class="form-select">
+                                    <option value="Security Operator" {% if role == 'Security Operator' or not role %}selected{% endif %}>Security Operator</option>
+                                    <option value="SCADA Engineer" {% if role == 'SCADA Engineer' %}selected{% endif %}>SCADA Engineer</option>
+                                    <option value="Industrial Auditor" {% if role == 'Industrial Auditor' %}selected{% endif %}>Industrial Auditor</option>
+                                    <option value="System Administrator" {% if role == 'System Administrator' %}selected{% endif %}>System Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-sm-6">
+                                <label class="form-label text-light small fw-medium">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                    <input type="password" name="password" class="form-control" required 
+                                           minlength="6" placeholder="Min 6 chars">
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-light small fw-medium">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-shield-lock-fill"></i></span>
+                                    <input type="password" name="confirm_password" class="form-control" required 
+                                           minlength="6" placeholder="Re-type password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-info w-100 fw-bold py-2 mb-3 text-dark">
+                            <i class="bi bi-check-circle-fill me-1"></i> Create Account &amp; Proceed to Login
+                        </button>
+                    </form>
+
+                    <!-- Back to Login Link -->
+                    <div class="text-center pt-2 border-top border-secondary">
+                        <p class="text-muted small mb-0">
+                            Already registered?
+                            <a href="{{ url_for('dashboard.login') }}" class="text-info fw-bold text-decoration-none ms-1">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Log in here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Footer note -->
+                <div class="text-center mt-3 text-muted" style="font-size: 0.72rem;">
+                    SCADA Cyber-Defense Lab &bull; Zero-Trust Operator Verification
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

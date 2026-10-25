@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block page_title %}Industrial SCADA System Overview{% endblock %}
+
+{% block content %}
+<!-- Notice Banner -->
+<div class="disclaimer-banner mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <i class="bi bi-shield-check text-info me-2"></i>
+        <strong>Integrated SCADA Defense Active:</strong> Live Modbus TCP telemetry monitored via Random Forest Intrusion Detector + BB84 Quantum Key Distribution session protection.
+    </div>
+    <span class="badge bg-secondary">Deterministic Seed #42</span>
+</div>
+
+<!-- Top Stats Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card card-scada p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="metric-label">Industrial Devices</div>
+                    <div class="metric-value">{{ online_devices }} <span class="fs-6 text-muted">/ {{ total_devices }} online</span></div>
+                </div>
+                <div class="fs-1 text-info"><i class="bi bi-hdd-network"></i></div>
+            </div>
+            <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                <span class="text-success"><i class="bi bi-check-circle"></i> RTU_01 & PLC_01 Active</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card card-scada p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="metric-label">Processed Messages</div>
+                    <div class="metric-value" id="val-total-messages">{{ traffic_summary.total_messages }}</div>
+                </div>
+                <div class="fs-1 text-primary"><i class="bi bi-chat-left-text"></i></div>
+            </div>
+            <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                Normal: <span class="text-light" id="val-normal-messages">{{ traffic_summary.normal_count }}</span> | Attacks: <span class="text-danger" id="val-attack-messages">{{ traffic_summary.attack_count }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card card-scada p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="metric-label">Detected Attacks</div>
+                    <div class="metric-value text-danger" id="val-attacks-detected">{{ traffic_summary.attack_count }}</div>
+                </div>
+                <div class="fs-1 text-danger"><i class="bi bi-shield-slash"></i></div>
+            </div>
+            <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                Attack Ratio: <span class="text-warning" id="val-attack-rate">{{ traffic_summary.attack_rate }}%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card card-scada p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="metric-label">Quantum BB84 Status</div>
+                    <div class="fs-5 fw-bold mt-1">
+                        {% if quantum_status.is_encrypted %}
+                        <span class="text-success"><i class="bi bi-lock-fill"></i> ACTIVE</span>
+                        {% else %}
+                        <span class="text-warning"><i class="bi bi-unlock-fill"></i> UNENCRYPTED</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="fs-1 text-info"><i class="bi bi-fingerprint"></i></div>
+            </div>
+            <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                QBER: <span class="text-light">{{ latest_qber.qber * 100 if latest_qber else 0.0 }}%</span> (Limit: 11%)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Telemetry Live Chart & Quantum Session Panel -->
+<div class="row g-3 mb-4">
+    <!-- Telemetry Chart -->
+    <div class="col-lg-8">
+        <div class="card card-scada h-100">
+            <div class="card-header-scada">
+                <span><i class="bi bi-graph-up text-info me-2"></i>Live Industrial Telemetry (Sensors & Holding Registers)</span>
+                <span class="badge bg-dark border border-secondary text-info">Real-time Feed</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Actuator and Quantum Status -->
+    <div class="col-lg-4">
+        <div class="card card-scada h-100">
+            <div class="card-header-scada">
+                <span><i class="bi bi-cpu text-info me-2"></i>Actuators & Cryptography</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 p-3 rounded" style="background-color: rgba(17, 26, 51, 0.7); border: 1px solid var(--border-color);">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-light small fw-medium">Feed Pump (PUMP_01):</span>
+                        <span class="badge bg-success" id="val-pump-state">RUNNING (1750 RPM)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-light small fw-medium">Safety Valve (VALVE_01):</span>
+                        <span class="badge bg-secondary" id="val-valve-state">CLOSED</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-light small fw-medium">PLC Rule State:</span>
+                        <span class="badge bg-info text-dark" id="val-plc-rule">NORMAL_REGULATION</span>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded" style="background-color: rgba(17, 26, 51, 0.7); border: 1px solid var(--border-color);">
+                    <h6 class="text-info mb-2 fs-6"><i class="bi bi-shield-shaded me-1"></i> BB84 Channel Session</h6>
+                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.8rem;">
+                        <span class="text-light small">Session ID:</span>
+                        <span class="mono-text text-info" id="val-session-id">{{ quantum_status.active_session_id or 'bb84_init' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.8rem;">
+                        <span class="text-light small">Cipher Algorithm:</span>
+                        <span class="text-success fw-bold">{{ quantum_status.cipher_algorithm }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" style="font-size: 0.8rem;">
+                        <span class="text-light small">Key TTL Remaining:</span>
+                        <span class="mono-text text-light" id="val-ttl-remaining">{{ quantum_status.ttl_remaining_secs }}s</span>
+                    </div>
+                    <a href="{{ url_for('dashboard.quantum_security') }}" class="btn btn-sm btn-outline-info w-100">
+                        <i class="bi bi-play-circle"></i> Test BB84 & QBER
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Security Alerts & Traffic Summary Table -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card card-scada">
+            <div class="card-header-scada">
+                <span><i class="bi bi-bell-fill text-danger me-2"></i>Recent Security Intrusion Alerts</span>
+                <a href="{{ url_for('dashboard.attack_alerts') }}" class="btn btn-sm btn-outline-secondary">View All Alerts</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-scada">
+                    <thead>
+                        <tr>
+                            <th>Alert ID</th>
+                            <th>Timestamp</th>
+                            <th>Attack Type</th>
+                            <th>Source Node</th>
+                            <th>Severity</th>
+                            <th>Confidence</th>
+                            <th>Mitigation Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alerts-tbody">
+                        {% for alert in recent_alerts %}
+                        <tr>
+                            <td class="mono-text text-info">{{ alert.alert_id }}</td>
+                            <td class="mono-text text-muted">{{ alert.timestamp }}</td>
+                            <td><span class="badge bg-danger">{{ alert.attack_type | upper }}</span></td>
+                            <td class="mono-text">{{ alert.source_device }}</td>
+                            <td>
+                                <span class="badge {% if alert.severity == 'HIGH' or alert.severity == 'CRITICAL' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                    {{ alert.severity }}
+                                </span>
+                            </td>
+                            <td class="mono-text">{{ (alert.confidence * 100) | round(1) }}%</td>
+                            <td class="text-light" style="font-size: 0.8rem;">{{ alert.mitigation_action }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">No active security alerts logged yet. System running in normal baseline.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTelemetryChart();
+        startAutoRefresh(3000);
+    });
+</script>
+{% endblock %}
