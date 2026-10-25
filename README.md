@@ -320,6 +320,13 @@ Console Output:
 Open your browser and navigate to:
 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
 
+> [!TIP]
+> **Authentication & Access Notes:**
+> * **Use HTTP, not HTTPS**: If clicking from GitHub, ensure the URL in your browser bar is `http://127.0.0.1:5000` (not `https://`).
+> * **Already Logged In?**: If you previously signed in, the system automatically redirects you straight to the Overview dashboard. To see the Login page again, click the red **Logout** button in the top navbar or open `http://127.0.0.1:5000` in an **Incognito / Private browser tab**.
+> * **Default Credentials**: `admin@scada.local` / `admin123` (or click **"Register here"** to create a new operator account).
+> * **Localhost Only**: `127.0.0.1` refers to your local machine. The browser must be on the computer where the server is running.
+
 ---
 
 ## 11. Dashboard Pages & Live Demonstration
