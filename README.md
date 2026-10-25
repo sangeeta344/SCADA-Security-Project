@@ -1,4 +1,5 @@
-# Machine Learning-Based SCADA Intrusion Detection with BB84 Quantum Key Distribution and Secure Communication Using Modbus TCP and MQTT
+# Quantum-Enhanced SCADA Intrusion Detection and Secure Communication <img width="1466" height="97" alt="image" src="https://github.com/user-attachments/assets/e0d14bdc-e951-4426-b6d6-d152c556dba3" />
+
 
 A comprehensive cybersecurity and quantum communication laboratory prototype designed for critical infrastructure SCADA systems.
 
