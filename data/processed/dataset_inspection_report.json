@@ -1,0 +1,360 @@
+{
+  "network_dataset": {
+    "exists": true,
+    "file_path": "D:\\Desktop\\SCADA_Security_Project\\dataset\\train_test_network.csv",
+    "file_name": "train_test_network.csv",
+    "file_size_mb": 28.52,
+    "rows": 211043,
+    "columns": 44,
+    "column_names": [
+      "src_ip",
+      "src_port",
+      "dst_ip",
+      "dst_port",
+      "proto",
+      "service",
+      "duration",
+      "src_bytes",
+      "dst_bytes",
+      "conn_state",
+      "missed_bytes",
+      "src_pkts",
+      "src_ip_bytes",
+      "dst_pkts",
+      "dst_ip_bytes",
+      "dns_query",
+      "dns_qclass",
+      "dns_qtype",
+      "dns_rcode",
+      "dns_AA",
+      "dns_RD",
+      "dns_RA",
+      "dns_rejected",
+      "ssl_version",
+      "ssl_cipher",
+      "ssl_resumed",
+      "ssl_established",
+      "ssl_subject",
+      "ssl_issuer",
+      "http_trans_depth",
+      "http_method",
+      "http_uri",
+      "http_version",
+      "http_request_body_len",
+      "http_response_body_len",
+      "http_status_code",
+      "http_user_agent",
+      "http_orig_mime_types",
+      "http_resp_mime_types",
+      "weird_name",
+      "weird_addl",
+      "weird_notice",
+      "label",
+      "type"
+    ],
+    "data_types": {
+      "src_ip": "str",
+      "src_port": "int64",
+      "dst_ip": "str",
+      "dst_port": "int64",
+      "proto": "str",
+      "service": "str",
+      "duration": "float64",
+      "src_bytes": "int64",
+      "dst_bytes": "int64",
+      "conn_state": "str",
+      "missed_bytes": "int64",
+      "src_pkts": "int64",
+      "src_ip_bytes": "int64",
+      "dst_pkts": "int64",
+      "dst_ip_bytes": "int64",
+      "dns_query": "str",
+      "dns_qclass": "int64",
+      "dns_qtype": "int64",
+      "dns_rcode": "int64",
+      "dns_AA": "str",
+      "dns_RD": "str",
+      "dns_RA": "str",
+      "dns_rejected": "str",
+      "ssl_version": "str",
+      "ssl_cipher": "str",
+      "ssl_resumed": "str",
+      "ssl_established": "str",
+      "ssl_subject": "str",
+      "ssl_issuer": "str",
+      "http_trans_depth": "str",
+      "http_method": "str",
+      "http_uri": "str",
+      "http_version": "str",
+      "http_request_body_len": "int64",
+      "http_response_body_len": "int64",
+      "http_status_code": "int64",
+      "http_user_agent": "str",
+      "http_orig_mime_types": "str",
+      "http_resp_mime_types": "str",
+      "weird_name": "str",
+      "weird_addl": "str",
+      "weird_notice": "str",
+      "label": "int64",
+      "type": "str"
+    },
+    "numeric_columns": [
+      "src_port",
+      "dst_port",
+      "duration",
+      "src_bytes",
+      "dst_bytes",
+      "missed_bytes",
+      "src_pkts",
+      "src_ip_bytes",
+      "dst_pkts",
+      "dst_ip_bytes",
+      "dns_qclass",
+      "dns_qtype",
+      "dns_rcode",
+      "http_request_body_len",
+      "http_response_body_len",
+      "http_status_code",
+      "label"
+    ],
+    "categorical_columns": [
+      "src_ip",
+      "dst_ip",
+      "proto",
+      "service",
+      "conn_state",
+      "dns_query",
+      "dns_AA",
+      "dns_RD",
+      "dns_RA",
+      "dns_rejected",
+      "ssl_version",
+      "ssl_cipher",
+      "ssl_resumed",
+      "ssl_established",
+      "ssl_subject",
+      "ssl_issuer",
+      "http_trans_depth",
+      "http_method",
+      "http_uri",
+      "http_version",
+      "http_user_agent",
+      "http_orig_mime_types",
+      "http_resp_mime_types",
+      "weird_name",
+      "weird_addl",
+      "weird_notice",
+      "type"
+    ],
+    "missing_values": {
+      "src_ip": 0,
+      "src_port": 0,
+      "dst_ip": 0,
+      "dst_port": 0,
+      "proto": 0,
+      "service": 0,
+      "duration": 0,
+      "src_bytes": 0,
+      "dst_bytes": 0,
+      "conn_state": 0,
+      "missed_bytes": 0,
+      "src_pkts": 0,
+      "src_ip_bytes": 0,
+      "dst_pkts": 0,
+      "dst_ip_bytes": 0,
+      "dns_query": 0,
+      "dns_qclass": 0,
+      "dns_qtype": 0,
+      "dns_rcode": 0,
+      "dns_AA": 0,
+      "dns_RD": 0,
+      "dns_RA": 0,
+      "dns_rejected": 0,
+      "ssl_version": 0,
+      "ssl_cipher": 0,
+      "ssl_resumed": 0,
+      "ssl_established": 0,
+      "ssl_subject": 0,
+      "ssl_issuer": 0,
+      "http_trans_depth": 0,
+      "http_method": 0,
+      "http_uri": 0,
+      "http_version": 0,
+      "http_request_body_len": 0,
+      "http_response_body_len": 0,
+      "http_status_code": 0,
+      "http_user_agent": 0,
+      "http_orig_mime_types": 0,
+      "http_resp_mime_types": 0,
+      "weird_name": 0,
+      "weird_addl": 0,
+      "weird_notice": 0,
+      "label": 0,
+      "type": 0
+    },
+    "total_missing_values": 0,
+    "duplicate_rows": 20569,
+    "candidate_targets": {
+      "label": {
+        "unique_count": 2,
+        "distribution": {
+          "1": 161043,
+          "0": 50000
+        }
+      },
+      "type": {
+        "unique_count": 10,
+        "distribution": {
+          "normal": 50000,
+          "backdoor": 20000,
+          "ddos": 20000,
+          "dos": 20000,
+          "injection": 20000,
+          "password": 20000,
+          "ransomware": 20000,
+          "scanning": 20000,
+          "xss": 20000,
+          "mitm": 1043
+        }
+      }
+    },
+    "has_timestamp": false,
+    "has_device_id": true,
+    "numerical_summary": {
+      "src_port": {
+        "min": 1.0,
+        "mean": 38646.519543410584,
+        "max": 65528.0
+      },
+      "dst_port": {
+        "min": 0.0,
+        "mean": 3495.153769610932,
+        "max": 65467.0
+      },
+      "duration": {
+        "min": 0.0,
+        "mean": 7.700886871267942,
+        "max": 93516.92917
+      },
+      "src_bytes": {
+        "min": 0.0,
+        "mean": 258113.56427363143,
+        "max": 3890855126.0
+      },
+      "dst_bytes": {
+        "min": 0.0,
+        "mean": 258804.57157546093,
+        "max": 3913853482.0
+      },
+      "missed_bytes": {
+        "min": 0.0,
+        "mean": 34432.344294764574,
+        "max": 1854527046.0
+      },
+      "src_pkts": {
+        "min": 0.0,
+        "mean": 9.595219931483157,
+        "max": 24623.0
+      },
+      "src_ip_bytes": {
+        "min": 0.0,
+        "mean": 776.0822059959345,
+        "max": 6522626.0
+      },
+      "dst_pkts": {
+        "min": 0.0,
+        "mean": 3.846860592391124,
+        "max": 121942.0
+      },
+      "dst_ip_bytes": {
+        "min": 0.0,
+        "mean": 1584.6866278436148,
+        "max": 86395523.0
+      }
+    }
+  },
+  "sensor_dataset": {
+    "exists": true,
+    "file_path": "D:\\Desktop\\SCADA_Security_Project\\dataset\\scada_sensor_dataset_200_rows.csv",
+    "file_name": "scada_sensor_dataset_200_rows.csv",
+    "file_size_mb": 0.01,
+    "rows": 200,
+    "columns": 8,
+    "column_names": [
+      "timestamp",
+      "sensor_id",
+      "rtu_id",
+      "temperature_c",
+      "pressure_bar",
+      "water_level_mm",
+      "flow_rate_lpm",
+      "operating_status"
+    ],
+    "data_types": {
+      "timestamp": "str",
+      "sensor_id": "str",
+      "rtu_id": "str",
+      "temperature_c": "float64",
+      "pressure_bar": "float64",
+      "water_level_mm": "float64",
+      "flow_rate_lpm": "float64",
+      "operating_status": "str"
+    },
+    "numeric_columns": [
+      "temperature_c",
+      "pressure_bar",
+      "water_level_mm",
+      "flow_rate_lpm"
+    ],
+    "categorical_columns": [
+      "timestamp",
+      "sensor_id",
+      "rtu_id",
+      "operating_status"
+    ],
+    "missing_values": {
+      "timestamp": 0,
+      "sensor_id": 0,
+      "rtu_id": 0,
+      "temperature_c": 0,
+      "pressure_bar": 0,
+      "water_level_mm": 0,
+      "flow_rate_lpm": 0,
+      "operating_status": 0
+    },
+    "total_missing_values": 0,
+    "duplicate_rows": 0,
+    "candidate_targets": {
+      "operating_status": {
+        "unique_count": 1,
+        "distribution": {
+          "NORMAL": 200
+        }
+      }
+    },
+    "has_timestamp": true,
+    "has_device_id": true,
+    "numerical_summary": {
+      "temperature_c": {
+        "min": 25.73,
+        "mean": 28.02,
+        "max": 30.4
+      },
+      "pressure_bar": {
+        "min": 2.196,
+        "mean": 2.512,
+        "max": 2.821
+      },
+      "water_level_mm": {
+        "min": 845.1,
+        "mean": 903.2875,
+        "max": 954.7
+      },
+      "flow_rate_lpm": {
+        "min": 28.24,
+        "mean": 35.16915,
+        "max": 41.13
+      }
+    }
+  }
+}

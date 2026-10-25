@@ -1,11 +1,35 @@
 version: '3.8'
 
 services:
+  scada-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scada_security_system
+    restart: unless-stopped
+    ports:
+      - "5000:5000"  # Web Dashboard (Login, Telemetry, Quantum BB84)
+      - "5020:5020"  # Modbus TCP Industrial Server
+    environment:
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - MODBUS_HOST=0.0.0.0
+      - MODBUS_PORT=5020
+      - MQTT_HOST=mqtt-broker
+      - MQTT_PORT=1883
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+    depends_on:
+      - mqtt-broker
+
   mqtt-broker:
     image: eclipse-mosquitto:2.0
     container_name: scada_mqtt_broker
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - "1883:1883"  # Mosquitto MQTT Telemetry Broker
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro

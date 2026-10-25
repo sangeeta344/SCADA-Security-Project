@@ -30,6 +30,7 @@ wheels/
 
 # Logs & Databases
 logs/*.log
+logs/*.csv
 !logs/.gitkeep
 data/*.db
 data/scada_security.db
@@ -51,3 +52,6 @@ Desktop.ini
 
 .streamlit/secrets.toml
 *.bak
+*.backup
+*_backup.py
+
