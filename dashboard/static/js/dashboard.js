@@ -6,6 +6,22 @@ let telemetryChartInstance = null;
 let qberChartInstance = null;
 let autoRefreshTimer = null;
 
+// Dynamic API Base URL resolution for multi-laptop testing
+function getApiBaseUrl() {
+    if (window.SCADA_CONFIG && window.SCADA_CONFIG.apiBase && window.SCADA_CONFIG.apiBase.trim()) {
+        const base = window.SCADA_CONFIG.apiBase.trim().replace(/\/+$/, "");
+        // If the browser is accessing via a LAN IP or domain, but apiBase was default localhost/127.0.0.1,
+        // do not route to localhost (which would erroneously target the client laptop)
+        if (window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost") {
+            if (base.includes("127.0.0.1") || base.includes("localhost")) {
+                return window.location.origin;
+            }
+        }
+        return base;
+    }
+    return window.location.origin;
+}
+
 // Update live clock
 function updateLiveClock() {
     const clockEl = document.getElementById("live-clock");
@@ -451,31 +467,136 @@ function getMitigationText(attackType, fallbackAction) {
     return ATTACK_MITIGATIONS[key] || fallbackAction || "Isolate anomalous client socket / Re-verify cryptographic session";
 }
 
+function renderAlertsTable(alerts) {
+    const tbody = document.getElementById("detailed-alerts-tbody");
+    if (!tbody || !alerts) return;
+
+    if (alerts.length === 0) {
+        tbody.innerHTML = `<tr id="no-alerts-row">
+            <td colspan="11" class="text-center text-muted py-4">No active attack alerts logged. All industrial communication within safe parameters.</td>
+        </tr>`;
+        return;
+    }
+
+    let html = "";
+    alerts.forEach(a => {
+        const specificMitigation = getMitigationText(a.attack_type, a.mitigation_action);
+        const target = a.target || a.target_display || (a.source_device && a.source_device.includes("->") ? a.source_device.split("->").pop().trim() : "SCADA_ASSET");
+        const method = a.detection_method || a.detection_method_display || (a.details && a.details.includes("IsolationForest") ? "Isolation Forest (ML)" : (a.details && a.details.includes("RandomForest") ? "Random Forest (ML)" : "Hybrid SCADA Guard"));
+        const isML = method.includes("ML");
+        const status = a.incident_status || a.status_display || (a.attack_type && a.attack_type.toLowerCase() === "password" ? "LOCKOUT ACTIVE" : "RECORDED");
+        const isLockout = status.includes("LOCKOUT");
+
+        html += `
+        <tr>
+            <td class="mono-text text-info">${a.alert_id}</td>
+            <td class="mono-text" style="color: #cbd5e1; font-size: 0.8rem;">${a.timestamp}</td>
+            <td><span class="badge bg-danger">${(a.attack_type || "").toUpperCase()}</span></td>
+            <td class="mono-text text-light" style="font-size: 0.8rem;">${a.source_device}</td>
+            <td class="mono-text text-warning" style="font-size: 0.8rem;">${target}</td>
+            <td>
+                <span class="badge ${a.severity === 'HIGH' || a.severity === 'CRITICAL' ? 'bg-danger' : 'bg-warning text-dark'}">
+                    ${a.severity}
+                </span>
+            </td>
+            <td>
+                <span class="badge ${isML ? 'bg-primary' : 'bg-secondary'}" style="font-size: 0.72rem;">
+                    ${method}
+                </span>
+            </td>
+            <td class="text-light fw-bold mono-text">${(a.predicted_label || "").toUpperCase()}</td>
+            <td>
+                <span class="badge ${isLockout ? 'bg-danger' : 'bg-success'}" style="font-size: 0.7rem;">
+                    ${status}
+                </span>
+            </td>
+            <td class="text-light" style="font-size: 0.8rem;">${a.details}</td>
+            <td class="text-info" style="font-size: 0.8rem;">${specificMitigation}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
 function fetchAlerts() {
-    fetch("/api/alerts?limit=50")
+    const url = `${getApiBaseUrl()}/api/alerts?limit=50`;
+    fetch(url, { credentials: "include" })
         .then(res => res.json())
         .then(data => {
-            const tbody = document.getElementById("detailed-alerts-tbody");
-            if (!tbody || !data.alerts) return;
+            if (data && data.alerts) {
+                renderAlertsTable(data.alerts);
+            }
+        })
+        .catch(err => console.debug("Alerts fetch error:", err));
+}
 
-            let html = "";
-            data.alerts.forEach(a => {
-                const specificMitigation = getMitigationText(a.attack_type, a.mitigation_action);
-                html += `
-                <tr>
-                    <td class="mono-text text-info">${a.alert_id}</td>
-                    <td class="mono-text" style="color: #cbd5e1;">${a.timestamp}</td>
-                    <td><span class="badge bg-danger">${a.attack_type.toUpperCase()}</span></td>
-                    <td class="mono-text text-light">${a.source_device}</td>
-                    <td><span class="badge ${a.severity === 'HIGH' || a.severity === 'CRITICAL' ? 'bg-danger' : 'bg-warning text-dark'}">${a.severity}</span></td>
-                    <td class="text-light fw-bold">${a.predicted_label.toUpperCase()}</td>
-                    <td class="mono-text text-light">${(a.confidence * 100).toFixed(1)}%</td>
-                    <td class="text-light" style="font-size: 0.8rem;">${a.details}</td>
-                    <td class="text-info" style="font-size: 0.8rem;">${specificMitigation}</td>
-                </tr>`;
+let sseEventSource = null;
+
+function startAlertsLiveStream() {
+    // Initial fetch
+    fetchAlerts();
+
+    const badge = document.getElementById("live-indicator-badge");
+
+    // Connect to Server-Sent Events for instant cross-laptop push updates
+    if (window.EventSource) {
+        try {
+            const streamUrl = `${getApiBaseUrl()}/api/alerts/stream`;
+            sseEventSource = new EventSource(streamUrl);
+
+            sseEventSource.addEventListener("connected", function() {
+                if (badge) {
+                    badge.className = "badge bg-success ms-2";
+                    badge.innerHTML = '<i class="bi bi-broadcast"></i> LIVE STREAM';
+                }
             });
-            tbody.innerHTML = html;
-        });
+
+            sseEventSource.addEventListener("alerts_update", function(e) {
+                try {
+                    const alerts = JSON.parse(e.data);
+                    renderAlertsTable(alerts);
+                } catch (err) {
+                    console.error("SSE parse error", err);
+                }
+            });
+
+            sseEventSource.onerror = function() {
+                if (badge) {
+                    badge.className = "badge bg-warning text-dark ms-2";
+                    badge.innerHTML = '<i class="bi bi-arrow-repeat"></i> POLLING (FALLBACK)';
+                }
+            };
+        } catch (e) {
+            console.warn("SSE init error, using polling", e);
+        }
+    }
+
+    // Resilient periodic polling interval (every 2 seconds) as guaranteed cross-laptop fallback
+    setInterval(() => {
+        fetchAlerts();
+    }, 2000);
+}
+
+function executeEmergencyStop() {
+    if (!confirm("EMERGENCY SYSTEM HALT:\n\nTerminate all active attack simulations and restore nominal physical process baselines?")) {
+        return;
+    }
+
+    const url = `${getApiBaseUrl()}/api/emergency-stop`;
+    fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✔ ${data.message}\n\nTimestamp: ${data.timestamp}\nTriggered by: ${data.triggered_by}`);
+            fetchAlerts();
+        } else {
+            alert("Emergency stop failed: " + (data.error || "Unknown error"));
+        }
+    })
+    .catch(err => alert("Emergency stop request error: " + err));
 }
 
 // Auto-refresh loops
@@ -492,7 +613,5 @@ function startTrafficAutoRefresh(intervalMs) {
 }
 
 function startAlertsAutoRefresh(intervalMs) {
-    setInterval(() => {
-        fetchAlerts();
-    }, intervalMs);
+    startAlertsLiveStream();
 }

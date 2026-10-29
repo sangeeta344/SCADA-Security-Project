@@ -14,6 +14,7 @@ from database.models import (
     QberMeasurement,
     ModelEvaluation,
     User,
+    EmailNotificationRecord,
 )
 from config.logging_config import logger
 
@@ -405,6 +406,98 @@ class Repository:
             if row:
                 return User(**dict(row))
             return None
+
+    # --- EMAIL NOTIFICATIONS ---
+
+    def insert_email_notification(self, rec: EmailNotificationRecord) -> int:
+        """Insert or replace an email notification audit record."""
+        with self.db.get_connection() as conn:
+            cur = conn.execute(
+                """
+                INSERT OR REPLACE INTO email_notifications
+                (incident_id, recipient, subject, status, attempt_count, last_attempt, sent_at, failure_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    rec.incident_id,
+                    rec.recipient,
+                    rec.subject,
+                    rec.status,
+                    rec.attempt_count,
+                    rec.last_attempt,
+                    rec.sent_at,
+                    rec.failure_reason,
+                ),
+            )
+            conn.commit()
+            return cur.lastrowid
+
+    def update_email_notification_status(
+        self,
+        incident_id: str,
+        status: str,
+        sent_at: Optional[str] = None,
+        failure_reason: Optional[str] = None,
+        increment_attempts: bool = True,
+    ) -> None:
+        """Update email notification status, attempt count, and timestamps."""
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self.db.get_connection() as conn:
+            if increment_attempts:
+                conn.execute(
+                    """
+                    UPDATE email_notifications
+                    SET status = ?,
+                        attempt_count = attempt_count + 1,
+                        last_attempt = ?,
+                        sent_at = COALESCE(?, sent_at),
+                        failure_reason = ?
+                    WHERE incident_id = ?
+                    """,
+                    (status, now_str, sent_at, failure_reason, incident_id),
+                )
+            else:
+                conn.execute(
+                    """
+                    UPDATE email_notifications
+                    SET status = ?,
+                        sent_at = COALESCE(?, sent_at),
+                        failure_reason = ?
+                    WHERE incident_id = ?
+                    """,
+                    (status, sent_at, failure_reason, incident_id),
+                )
+            conn.commit()
+
+    def get_email_notification(self, incident_id: str) -> Optional[EmailNotificationRecord]:
+        """Fetch notification record by incident ID."""
+        with self.db.get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT id, incident_id, recipient, subject, status, attempt_count, created_at,
+                       last_attempt, sent_at, failure_reason
+                FROM email_notifications
+                WHERE incident_id = ?
+                """,
+                (incident_id,),
+            ).fetchone()
+            if row:
+                return EmailNotificationRecord(**dict(row))
+            return None
+
+    def get_recent_email_notifications(self, limit: int = 50) -> List[EmailNotificationRecord]:
+        """Fetch latest notification audit records."""
+        with self.db.get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, incident_id, recipient, subject, status, attempt_count, created_at,
+                       last_attempt, sent_at, failure_reason
+                FROM email_notifications
+                ORDER BY id DESC LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+            return [EmailNotificationRecord(**dict(r)) for r in rows]
 
 
 repo = Repository()

@@ -1,0 +1,82 @@
+{% extends "attacker_base.html" %}
+
+{% block title %}Adversary Portal &bull; Lab Authentication{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center my-4 py-3">
+    <div class="col-lg-5 col-md-7 col-sm-10">
+        <div class="card card-attacker p-4">
+            <div class="text-center mb-4">
+                <div class="d-inline-flex p-3 rounded-circle mb-3" style="background: rgba(255, 26, 83, 0.15); border: 2px solid #ff1a53;">
+                    <i class="bi bi-shield-lock-fill text-danger fs-1"></i>
+                </div>
+                <h4 class="text-light fw-bold mb-1">Adversary Portal Access</h4>
+                <p class="text-muted small">Authorized Penetration Testing &amp; SCADA Attack Emulation</p>
+            </div>
+
+            <!-- One-Click Demo Quick Logins for Evaluator Testing -->
+            <div class="p-3 mb-4 rounded" style="background-color: #0e131d; border: 1px dashed #3a4a68;">
+                <div class="small fw-semibold text-warning mb-2">
+                    <i class="bi bi-stars"></i> Authorized Lab Fictional Credentials (1-Click Auto-Fill):
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger text-start d-flex justify-content-between align-items-center" onclick="fillCredentials('redteam_lead@scada-lab.local', 'Adversary2026!');">
+                        <span><i class="bi bi-person-fill-check me-2"></i><strong>Red Team Lead</strong> (Full Adversary Access)</span>
+                        <span class="badge bg-danger">Fill &amp; Enter</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-start d-flex justify-content-between align-items-center" onclick="fillCredentials('researcher@scada-lab.local', 'LabResearch2026!');">
+                        <span><i class="bi bi-person-fill-gear me-2"></i><strong>Security Researcher</strong> (Lab Simulation Only)</span>
+                        <span class="badge bg-warning text-dark">Fill &amp; Enter</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form method="POST" action="{{ url_for('attacker.login', next=request.args.get('next')) }}" id="attacker-login-form">
+                <div class="mb-3">
+                    <label class="form-label-attacker" for="email">Fictional Adversary Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-envelope-fill"></i></span>
+                        <input type="email" class="form-control form-control-attacker" id="email" name="email" value="{{ email or '' }}" required autofocus placeholder="name@scada-lab.local">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label-attacker" for="password">Lab Access Passcode</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-key-fill"></i></span>
+                        <input type="password" class="form-control form-control-attacker" id="password" name="password" required placeholder="••••••••••••">
+                    </div>
+                </div>
+
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-attacker-primary py-2 fw-bold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Authenticate Adversary Session
+                    </button>
+                </div>
+
+                <div class="text-center pt-2 border-top border-dark">
+                    <span class="text-muted small">Looking for the SCADA Operator site?</span>
+                    <a href="{{ url_for('dashboard.login') }}" class="text-info text-decoration-none small ms-1">
+                        <i class="bi bi-shield-check"></i> Go to Operator Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="text-center mt-3 text-muted" style="font-size: 0.75rem;">
+            <i class="bi bi-lock me-1"></i> Isolated authentication realm &bull; Never uses or stores real operator credentials
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillCredentials(email, pass) {
+    document.getElementById("email").value = email;
+    document.getElementById("password").value = pass;
+    document.getElementById("attacker-login-form").submit();
+}
+</script>
+{% endblock %}

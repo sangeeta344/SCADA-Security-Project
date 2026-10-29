@@ -3,14 +3,17 @@
 import pytest
 from dashboard.app import create_app
 from database.repository import repo
+from security.login_monitor import login_monitor
 
 
 @pytest.fixture
 def client():
     """Create Flask test client with test configuration."""
+    login_monitor.reset_all()
     app = create_app({"TESTING": True})
     with app.test_client() as client:
         yield client
+    login_monitor.reset_all()
 
 
 def test_unauthenticated_redirects_to_login(client):

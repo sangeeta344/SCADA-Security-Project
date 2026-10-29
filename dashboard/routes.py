@@ -11,9 +11,12 @@ from flask import (
     session,
     flash,
     current_app,
+    Response,
+    stream_with_context,
 )
 from typing import Dict, Any
 import json
+import time
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -21,6 +24,7 @@ from config.settings import settings
 from config.logging_config import logger
 from database.repository import repo
 from security.key_manager import key_manager
+from security.login_monitor import login_monitor
 from attack_simulation.attack_controller import attack_controller
 from ml_detection.model_loader import model_loader
 from ml_detection.evaluate_model import ModelEvaluator
@@ -28,12 +32,35 @@ from ml_detection.evaluate_model import ModelEvaluator
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
-def _is_localhost() -> bool:
-    """Security check ensuring control endpoints are invoked by authenticated users or localhost."""
-    if session.get("user_id"):
+def _is_authorized_client() -> bool:
+    """Security check ensuring control endpoints are invoked by authenticated users, localhost, authorized API keys, or authorized CIDRs."""
+    if session.get("user_id") or session.get("attacker_user"):
         return True
+
+    api_key = request.headers.get("X-API-Key")
+    if api_key and settings.SCADA_API_KEY and api_key == settings.SCADA_API_KEY:
+        return True
+
     remote = request.remote_addr
-    return remote in ("127.0.0.1", "::1", "localhost", None)
+    if remote in ("127.0.0.1", "::1", "localhost", None):
+        return True
+
+    if settings.AUTHORIZED_CIDR:
+        try:
+            import ipaddress
+            client_ip = ipaddress.ip_address(remote)
+            network = ipaddress.ip_network(settings.AUTHORIZED_CIDR, strict=False)
+            if client_ip in network:
+                return True
+        except Exception:
+            pass
+
+    return False
+
+
+def _is_localhost() -> bool:
+    """Backward compatibility alias for _is_authorized_client."""
+    return _is_authorized_client()
 
 
 def login_required(f):
@@ -56,7 +83,7 @@ def login_required(f):
 
 @dashboard_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """User login endpoint using email and password."""
+    """User login endpoint using email and password with brute-force rate monitoring."""
     if session.get("user_id"):
         return redirect(url_for("dashboard.overview"))
 
@@ -68,10 +95,33 @@ def login():
             flash("Please enter both email and password.", "danger")
             return render_template("login.html", email=email), 400
 
+        client_ip = request.remote_addr or "127.0.0.1"
+
+        # Check defensive temporary account lockout
+        is_locked, remaining_sec = login_monitor.is_account_locked(email)
+        if is_locked:
+            flash(
+                "Account protection is active due to multiple failed login attempts. Please try again later.",
+                "warning",
+            )
+            return render_template("login.html", email=email), 429
+
         user = repo.get_user_by_email(email)
         if not user or not check_password_hash(user.password_hash, password):
+            # Record failed login attempt without ever logging or exposing passwords
+            res = login_monitor.record_failed_login(email, ip=client_ip, source="DEFENDER_LOGIN")
+            if res.get("threshold_exceeded"):
+                flash(
+                    "Account protection is active due to multiple failed login attempts. Please try again later.",
+                    "warning",
+                )
+                return render_template("login.html", email=email), 429
+
             flash("Invalid email or password. Please try again.", "danger")
             return render_template("login.html", email=email), 401
+
+        # Successful authentication resets failed attempts counter
+        login_monitor.record_successful_login(email, ip=client_ip)
 
         session.clear()
         session["user_id"] = user.id
@@ -86,6 +136,22 @@ def login():
         return redirect(url_for("dashboard.overview"))
 
     return render_template("login.html", email=request.args.get("email"))
+
+
+@dashboard_bp.route("/api/admin/unlock-account", methods=["POST"])
+@login_required
+def admin_unlock_account():
+    """Administrative action to reset lockout on an operator account."""
+    data = request.get_json(silent=True) or {}
+    account = data.get("account", "").strip()
+    if not account:
+        return jsonify({"error": "Account identifier required"}), 400
+    success = login_monitor.reset_account(account)
+    return jsonify({
+        "success": success,
+        "account": account,
+        "message": f"Account protection reset for {account}",
+    })
 
 
 @dashboard_bp.route("/register", methods=["GET", "POST"])
@@ -406,3 +472,79 @@ def api_simulation_stop():
     if not _is_localhost():
         return jsonify({"error": "Unauthorized"}), 403
     return jsonify({"success": True, "message": "Simulation paused."})
+
+
+@dashboard_bp.route("/api/alerts/stream")
+def api_alerts_stream():
+    """Server-Sent Events endpoint pushing real-time attack alerts to connected browsers."""
+    def event_generator():
+        last_seen_id = None
+        # Initial connection event
+        yield f"event: connected\ndata: {json.dumps({'status': 'connected', 'timestamp': datetime.now().isoformat()})}\n\n"
+
+        recent = repo.get_recent_alerts(limit=1)
+        if recent:
+            last_seen_id = recent[0].alert_id
+
+        # Stream loop for push notifications
+        for _ in range(60):
+            time.sleep(1.0)
+            try:
+                latest_alerts = repo.get_recent_alerts(limit=50)
+                if latest_alerts and (last_seen_id is None or latest_alerts[0].alert_id != last_seen_id):
+                    last_seen_id = latest_alerts[0].alert_id
+                    payload = json.dumps([a.to_dict() for a in latest_alerts])
+                    yield f"event: alerts_update\ndata: {payload}\n\n"
+                else:
+                    yield ": ping\n\n"
+            except Exception as err:
+                logger.debug("SSE stream loop terminated: %s", err)
+                break
+
+    return Response(
+        stream_with_context(event_generator()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
+
+
+@dashboard_bp.route("/api/emergency-stop", methods=["POST"])
+def api_emergency_stop():
+    """Global emergency stop halting all attack simulations and restoring baselines."""
+    if not _is_authorized_client():
+        return jsonify({"error": "Unauthorized: Administrative control privileges required"}), 403
+
+    client_ip = request.remote_addr or "127.0.0.1"
+    user_info = session.get("username") or (session.get("attacker_user") or {}).get("username") or "OPERATOR"
+    logger.warning("GLOBAL EMERGENCY STOP triggered from IP %s by %s", client_ip, user_info)
+
+    # 1. Stop background attack controller
+    attack_controller.stop_all()
+
+    # 2. Stop adversary portal continuous loops & restore telemetry
+    try:
+        from attacker_portal.simulation_service import attacker_service
+        attacker_service.stop_all()
+        attacker_service.restore_sensor_telemetry("RTU_01")
+    except Exception as err:
+        logger.warning("Attacker service emergency halt warning: %s", err)
+
+    # 3. Reset account lockouts
+    try:
+        from security.login_monitor import login_monitor
+        login_monitor.reset_all()
+    except Exception as err:
+        logger.warning("Login monitor emergency reset warning: %s", err)
+
+    return jsonify({
+        "success": True,
+        "message": "EMERGENCY STOP EXECUTED: All simulations halted and sensor telemetry restored to nominal baseline.",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "triggered_by": user_info,
+        "client_ip": client_ip,
+    })

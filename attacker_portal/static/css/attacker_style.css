@@ -1,0 +1,270 @@
+/**
+ * SCADA Adversary Emulation & Penetration Testing Portal Stylesheet
+ * Completely isolated from the operator dashboard.
+ */
+
+:root {
+    --adv-bg: #0b0e14;
+    --adv-surface: #121722;
+    --adv-card: #182030;
+    --adv-card-hover: #1e283d;
+    --adv-border: #26334d;
+    --adv-border-active: #ff3366;
+    --adv-crimson: #ff1a53;
+    --adv-red: #ff3366;
+    --adv-amber: #ffaa00;
+    --adv-cyan: #00f0ff;
+    --adv-purple: #9d4edd;
+    --adv-green: #00ff88;
+    --adv-text-main: #f0f4fc;
+    --adv-text-muted: #8b9bb4;
+    --adv-code-bg: #07090d;
+}
+
+body {
+    background-color: var(--adv-bg);
+    color: var(--adv-text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+}
+
+/* Navbar */
+.navbar-attacker {
+    background-color: #0e131d;
+    border-bottom: 2px solid #ff1a53;
+    box-shadow: 0 4px 20px rgba(255, 26, 83, 0.15);
+}
+
+.brand-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #ffffff;
+}
+
+.brand-badge {
+    background: linear-gradient(135deg, #ff1a53, #b3003b);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Banner */
+.disclaimer-attacker {
+    background: linear-gradient(90deg, rgba(255, 26, 83, 0.15), rgba(255, 170, 0, 0.1));
+    border: 1px solid rgba(255, 26, 83, 0.4);
+    border-left: 4px solid #ff1a53;
+    border-radius: 6px;
+    padding: 0.75rem 1.25rem;
+    color: #ffd1dc;
+    font-size: 0.85rem;
+}
+
+/* Cards */
+.card-attacker {
+    background-color: var(--adv-card);
+    border: 1px solid var(--adv-border);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.card-attacker:hover {
+    border-color: rgba(255, 26, 83, 0.5);
+}
+
+.card-attacker-header {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid var(--adv-border);
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Buttons */
+.btn-attacker-primary {
+    background: linear-gradient(135deg, #ff1a53, #d90429);
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-attacker-primary:hover {
+    background: linear-gradient(135deg, #ff3366, #ef233c);
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(255, 26, 83, 0.5);
+}
+
+.btn-attacker-secondary {
+    background-color: #242f44;
+    color: #f0f4fc;
+    border: 1px solid var(--adv-border);
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-attacker-secondary:hover {
+    background-color: #2f3e5c;
+    color: #ffffff;
+    border-color: #ff1a53;
+}
+
+/* Terminal output */
+.terminal-window {
+    background-color: var(--adv-code-bg);
+    border: 1px solid #1f2a3e;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #00ff88;
+    max-height: 380px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.terminal-header {
+    background-color: #101624;
+    border-bottom: 1px solid #1f2a3e;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px 8px 0 0;
+    font-size: 0.75rem;
+    color: #8b9bb4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.term-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.dot-red { background-color: #ff5f56; }
+.dot-yellow { background-color: #ffbd2e; }
+.dot-green { background-color: #27c93f; }
+
+/* Status Badges */
+.badge-active {
+    background-color: #ff1a53;
+    color: #ffffff;
+    animation: pulseGlow 1.8s infinite;
+}
+
+.badge-starting {
+    background-color: #f59e0b;
+    color: #121722;
+    font-weight: 700;
+}
+
+.badge-stopped {
+    background-color: #64748b;
+    color: #ffffff;
+}
+
+.badge-failed {
+    background-color: #dc2626;
+    color: #ffffff;
+    animation: pulseGlow 1.2s infinite;
+}
+
+.badge-idle {
+    background-color: #26334d;
+    color: #8b9bb4;
+}
+
+.badge-ml {
+    background-color: #9d4edd;
+    color: white;
+    font-size: 0.75rem;
+}
+
+.badge-rule {
+    background-color: #ffaa00;
+    color: #121722;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(255, 26, 83, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(255, 26, 83, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 26, 83, 0); }
+}
+
+/* Tables */
+.table-attacker {
+    width: 100%;
+    margin-bottom: 0;
+    color: var(--adv-text-main);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-attacker th {
+    background-color: #121824;
+    color: #8b9bb4;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--adv-border);
+}
+
+.table-attacker td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(38, 51, 77, 0.5);
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.table-attacker tr:hover td {
+    background-color: rgba(255, 26, 83, 0.05);
+}
+
+/* Forms */
+.form-label-attacker {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 0.25rem;
+}
+
+.form-control-attacker, .form-select-attacker {
+    background-color: #0e131d;
+    border: 1px solid var(--adv-border);
+    color: #f0f4fc;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 5px;
+}
+
+.form-control-attacker:focus, .form-select-attacker:focus {
+    background-color: #121824;
+    border-color: #ff1a53;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 26, 83, 0.3);
+    outline: none;
+}
+
+.mono-font {
+    font-family: "JetBrains Mono", Consolas, monospace;
+}

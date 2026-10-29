@@ -78,5 +78,21 @@ class Settings:
     NETWORK_METRICS_PATH: Path = MODELS_DIR / "network_metrics.json"
     SENSOR_METRICS_PATH: Path = MODELS_DIR / "sensor_metrics.json"
 
+    # SMTP Alert Email Configuration
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "alerts@scada-security.local")
+    SCADA_ALERT_EMAIL: str = os.getenv("SCADA_ALERT_EMAIL", "")
+    SCADA_PUBLIC_URL: str = os.getenv("SCADA_PUBLIC_URL", "http://127.0.0.1:5000")
+
+    # Cross-Laptop & Network Security Configuration
+    BACKEND_API_URL: str = os.getenv("BACKEND_API_URL", "")
+    CORS_ALLOWED_ORIGINS: str = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+    AUTHORIZED_CIDR: str = os.getenv("AUTHORIZED_CIDR", "")
+    SCADA_API_KEY: str = os.getenv("SCADA_API_KEY", "")
+    DEMO_ACCOUNT_EMAIL: str = os.getenv("DEMO_ACCOUNT_EMAIL", "demo_operator@scada.local")
+
 
 settings = Settings()

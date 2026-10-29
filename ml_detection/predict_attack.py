@@ -170,6 +170,12 @@ class AttackPredictor:
                 )
                 try:
                     self.repo.insert_attack_alert(alert)
+                    # Trigger centralized security email alert
+                    try:
+                        from security.email_notifier import email_notifier
+                        email_notifier.notify_incident(alert)
+                    except Exception as err:
+                        logger.warning("Email notification trigger error: %s", err)
                 except Exception as e:
                     logger.warning("Failed to store attack alert: %s", e)
 

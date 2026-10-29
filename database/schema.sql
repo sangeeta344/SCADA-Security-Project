@@ -128,3 +128,21 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
+-- Automatic Security Alert Email Notifications
+CREATE TABLE IF NOT EXISTS email_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_id TEXT UNIQUE NOT NULL,
+    recipient TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending, sent, failed, skipped
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_attempt TIMESTAMP,
+    sent_at TIMESTAMP,
+    failure_reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_incident ON email_notifications(incident_id);
+CREATE INDEX IF NOT EXISTS idx_email_status ON email_notifications(status);
+
+

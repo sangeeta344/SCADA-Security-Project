@@ -169,8 +169,22 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    print("\n[+] Dashboard URL: http://{}:{}".format(settings.FLASK_HOST, settings.FLASK_PORT))
-    print("[+] Press Ctrl+C to stop the application.\n" + "=" * 75 + "\n")
+    import socket
+    lan_ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.2)
+        s.connect(("8.8.8.8", 80))
+        lan_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+
+    print(f"\n[+] Local Operator URL:      http://127.0.0.1:{settings.FLASK_PORT}")
+    print(f"[+] Local Attacker Portal:   http://127.0.0.1:{settings.FLASK_PORT}/attacker")
+    print(f"[+] Cross-Laptop Operator:   http://{lan_ip}:{settings.FLASK_PORT}")
+    print(f"[+] Cross-Laptop Attacker:   http://{lan_ip}:{settings.FLASK_PORT}/attacker")
+    print("\n[+] Press Ctrl+C to stop the application.\n" + "=" * 75 + "\n")
 
     try:
         app.run(

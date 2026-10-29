@@ -1,125 +1,27 @@
 {% extends "base.html" %}
 
-{% block page_title %}Controlled Attack Simulation & Intrusion Alerts{% endblock %}
+{% block page_title %}Security Incident Detection Log & Intrusion Alerts{% endblock %}
 
 {% block content %}
-<!-- Safety Notice -->
-<div class="row g-3 mb-4">
-    <div class="col-12">
-        <div class="disclaimer-banner d-flex justify-content-between align-items-center">
-            <div>
-                <i class="bi bi-shield-exclamation text-danger me-2"></i>
-                <strong>Controlled Local Simulation Environment:</strong> Attacks are simulated harmlessly against in-memory synthetic telemetry on localhost. No external networks or real industrial equipment are targeted.
-            </div>
-            <button class="btn btn-sm btn-outline-danger" onclick="stopAttack('all');">
-                <i class="bi bi-stop-circle"></i> Stop All Attacks
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Attack Simulation Control Panel -->
-<div class="row g-3 mb-4">
-    <!-- 1. Replay Attack -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card card-scada h-100 p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-light mb-0"><i class="bi bi-arrow-repeat text-warning me-1"></i> Replay Attack</h6>
-                <span class="badge {% if 'replay' in active_attacks %}bg-danger{% else %}bg-secondary{% endif %}" id="status-badge-replay">
-                    {% if 'replay' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
-                </span>
-            </div>
-            <p class="small mb-3" style="color: #cbd5e1; font-size: 0.8rem;">
-                Replays previously captured valid telemetry packets with stale timestamps and repeated sequence numbers.
-            </p>
-            <div class="mt-auto d-flex gap-2">
-                <button class="btn btn-sm btn-attack-start w-50" onclick="startAttack('replay');">
-                    <i class="bi bi-play-fill"></i> Start
-                </button>
-                <button class="btn btn-sm btn-attack-stop w-50" onclick="stopAttack('replay');">
-                    <i class="bi bi-stop-fill"></i> Stop
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. Data Injection -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card card-scada h-100 p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-light mb-0"><i class="bi bi-virus text-danger me-1"></i> False Data Injection</h6>
-                <span class="badge {% if 'injection' in active_attacks %}bg-danger{% else %}bg-secondary{% endif %}" id="status-badge-injection">
-                    {% if 'injection' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
-                </span>
-            </div>
-            <p class="small mb-3" style="color: #cbd5e1; font-size: 0.8rem;">
-                Injects out-of-boundary sensor measurements (e.g. 90°C temp, 1400mm water) or unauthorized register writes.
-            </p>
-            <div class="mt-auto d-flex gap-2">
-                <button class="btn btn-sm btn-attack-start w-50" onclick="startAttack('injection');">
-                    <i class="bi bi-play-fill"></i> Start
-                </button>
-                <button class="btn btn-sm btn-attack-stop w-50" onclick="stopAttack('injection');">
-                    <i class="bi bi-stop-fill"></i> Stop
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. MITM Tampering -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card card-scada h-100 p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-light mb-0"><i class="bi bi-shuffle text-info me-1"></i> MITM Simulation</h6>
-                <span class="badge {% if 'mitm' in active_attacks %}bg-danger{% else %}bg-secondary{% endif %}" id="status-badge-mitm">
-                    {% if 'mitm' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
-                </span>
-            </div>
-            <p class="small mb-3" style="color: #cbd5e1; font-size: 0.8rem;">
-                Intercepts and modifies control payloads in-flight, flipping actuator commands or corrupting ciphertext.
-            </p>
-            <div class="mt-auto d-flex gap-2">
-                <button class="btn btn-sm btn-attack-start w-50" onclick="startAttack('mitm');">
-                    <i class="bi bi-play-fill"></i> Start
-                </button>
-                <button class="btn btn-sm btn-attack-stop w-50" onclick="stopAttack('mitm');">
-                    <i class="bi bi-stop-fill"></i> Stop
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. DoS Flood -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card card-scada h-100 p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-light mb-0"><i class="bi bi-tsunami text-danger me-1"></i> DoS Flood</h6>
-                <span class="badge {% if 'dos' in active_attacks %}bg-danger{% else %}bg-secondary{% endif %}" id="status-badge-dos">
-                    {% if 'dos' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
-                </span>
-            </div>
-            <p class="small mb-3" style="color: #cbd5e1; font-size: 0.8rem;">
-                Bursts high-frequency query packets (50–120 pkt/s) bounded by safety limits to trigger rate-anomaly alarms.
-            </p>
-            <div class="mt-auto d-flex gap-2">
-                <button class="btn btn-sm btn-attack-start w-50" onclick="startAttack('dos');">
-                    <i class="bi bi-play-fill"></i> Start
-                </button>
-                <button class="btn btn-sm btn-attack-stop w-50" onclick="stopAttack('dos');">
-                    <i class="bi bi-stop-fill"></i> Stop
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Attack Alerts History Table -->
 <div class="card card-scada">
-    <div class="card-header-scada">
-        <span class="text-light fw-semibold"><i class="bi bi-shield-fill-exclamation text-danger me-2"></i>Security Incident Detection Log</span>
-        <button class="btn btn-sm btn-outline-info" onclick="fetchAlerts();">
-            <i class="bi bi-arrow-repeat"></i> Refresh Alerts
-        </button>
+    <div class="card-header-scada d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            <span class="text-light fw-semibold">
+                <i class="bi bi-shield-fill-exclamation text-danger me-2"></i>Security Incident Detection Log
+            </span>
+            <span class="badge bg-success ms-2" id="live-indicator-badge" style="font-size: 0.7rem;">
+                <i class="bi bi-broadcast"></i> LIVE STREAM
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-danger" onclick="executeEmergencyStop();" title="Emergency halt all active simulations and restore baseline">
+                <i class="bi bi-x-octagon-fill me-1"></i> Emergency Simulation Halt
+            </button>
+            <button class="btn btn-sm btn-outline-info" onclick="fetchAlerts();">
+                <i class="bi bi-arrow-repeat"></i> Refresh Alerts
+            </button>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-scada">
@@ -129,10 +31,12 @@
                     <th>Detection Timestamp</th>
                     <th>Attack Category</th>
                     <th>Origin Node</th>
+                    <th>Target Asset / Account</th>
                     <th>Severity</th>
-                    <th>ML Classification</th>
-                    <th>Model Confidence</th>
-                    <th>Attack Details & Features</th>
+                    <th>Detection Method</th>
+                    <th>Detection Outcome</th>
+                    <th>Incident Status</th>
+                    <th>Attack Details &amp; Diagnosis</th>
                     <th>Recommended Mitigation</th>
                 </tr>
             </thead>
@@ -140,24 +44,34 @@
                 {% for a in alerts %}
                 <tr>
                     <td class="mono-text text-info">{{ a.alert_id }}</td>
-                    <td class="mono-text" style="color: #cbd5e1;">{{ a.timestamp }}</td>
+                    <td class="mono-text" style="color: #cbd5e1; font-size: 0.8rem;">{{ a.timestamp }}</td>
                     <td>
                         <span class="badge bg-danger">{{ a.attack_type | upper }}</span>
                     </td>
-                    <td class="mono-text text-light">{{ a.source_device }}</td>
+                    <td class="mono-text text-light" style="font-size: 0.8rem;">{{ a.source_device }}</td>
+                    <td class="mono-text text-warning" style="font-size: 0.8rem;">{{ a.target_display }}</td>
                     <td>
                         <span class="badge {% if a.severity == 'HIGH' or a.severity == 'CRITICAL' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
                             {{ a.severity }}
                         </span>
                     </td>
-                    <td class="text-light fw-bold">{{ a.predicted_label | upper }}</td>
-                    <td class="mono-text text-light">{{ (a.confidence * 100) | round(1) }}%</td>
+                    <td>
+                        <span class="badge {% if 'ML' in a.detection_method_display %}bg-primary{% else %}bg-secondary{% endif %}" style="font-size: 0.72rem;">
+                            {{ a.detection_method_display }}
+                        </span>
+                    </td>
+                    <td class="text-light fw-bold mono-text">{{ a.predicted_label | upper }}</td>
+                    <td>
+                        <span class="badge {% if 'LOCKOUT' in a.status_display %}bg-danger{% else %}bg-success{% endif %}" style="font-size: 0.7rem;">
+                            {{ a.status_display }}
+                        </span>
+                    </td>
                     <td class="text-light" style="font-size: 0.8rem;">{{ a.details }}</td>
                     <td class="text-info" style="font-size: 0.8rem;">{{ a.mitigation_action }}</td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="9" class="text-center text-muted py-4">No active attack alerts logged. All industrial communication within safe parameters.</td>
+                <tr id="no-alerts-row">
+                    <td colspan="11" class="text-center text-muted py-4">No active attack alerts logged. All industrial communication within safe parameters.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -169,7 +83,11 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        startAlertsAutoRefresh(3000);
+        if (typeof startAlertsLiveStream === "function") {
+            startAlertsLiveStream();
+        } else if (typeof startAlertsAutoRefresh === "function") {
+            startAlertsAutoRefresh(2000);
+        }
     });
 </script>
 {% endblock %}

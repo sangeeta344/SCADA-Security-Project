@@ -71,21 +71,23 @@ class Database:
         conn.commit()
 
     def _seed_default_users(self, conn: sqlite3.Connection) -> None:
-        """Seed default administrator user if users table is empty."""
+        """Seed default administrator and dedicated demo operator accounts if not present."""
         try:
-            cur = conn.execute("SELECT COUNT(*) FROM users")
-            if cur.fetchone()[0] == 0:
-                from werkzeug.security import generate_password_hash
-                admin_hash = generate_password_hash("admin123")
+            from werkzeug.security import generate_password_hash
+            default_users = [
+                ("SCADA Administrator", "admin@scada.local", generate_password_hash("admin123"), "System Administrator"),
+                ("Demo SCADA Operator", "demo_operator@scada.local", generate_password_hash("demo123"), "Operator"),
+            ]
+            for user in default_users:
                 conn.execute(
                     """
-                    INSERT INTO users (username, email, password_hash, role)
+                    INSERT OR IGNORE INTO users (username, email, password_hash, role)
                     VALUES (?, ?, ?, ?)
                     """,
-                    ("SCADA Administrator", "admin@scada.local", admin_hash, "System Administrator"),
+                    user,
                 )
-                conn.commit()
-                logger.info("Default admin user seeded: admin@scada.local / admin123")
+            conn.commit()
+            logger.info("Default baseline accounts verified: admin@scada.local, demo_operator@scada.local")
         except Exception as e:
             logger.warning("User seeding error: %s", e)
 

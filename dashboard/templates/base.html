@@ -12,6 +12,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Dynamic Network & Backend API Configuration for Multi-Laptop Operation -->
+    <script>
+        window.SCADA_CONFIG = {
+            apiBase: "{{ backend_api_url or '' }}",
+            publicUrl: "{{ scada_public_url or '' }}"
+        };
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body>

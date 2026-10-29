@@ -1,0 +1,772 @@
+{% extends "attacker_base.html" %}
+
+{% block title %}Adversary Emulation Console &bull; SCADA Attack Lab{% endblock %}
+
+{% block content %}
+<!-- Section 1: Attacker Dashboard Metrics -->
+<div class="row g-3 mb-4" id="dashboard-metrics">
+    <!-- Quick Controls Toolbar: Target Backend & Emergency Halt -->
+    <div class="col-12">
+        <div class="card card-attacker p-2 px-3 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2" style="background-color: #0b0e14; border: 1px solid #1f293d;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-secondary small">Target Backend API:</span>
+                <span class="badge bg-dark text-info mono-font border border-info" id="active-backend-url-display">http://127.0.0.1:5000</span>
+                <span class="badge bg-secondary" style="font-size: 0.65rem;">CROSS-LAPTOP SYNCED</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-danger" onclick="executeEmergencyHalt();" title="Emergency halt all active simulations and restore baseline">
+                    <i class="bi bi-x-octagon-fill me-1"></i> Emergency Simulation Halt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 1: Network Model -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-attacker p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small">NETWORK ML CLASSIFIER</span>
+                <span class="badge {% if models_status.network_model.available %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if models_status.network_model.available %}ONLINE{% else %}OFFLINE{% endif %}
+                </span>
+            </div>
+            <div class="fs-5 fw-bold text-light mb-1">Random Forest Model</div>
+            <div class="small text-muted" style="font-size: 0.78rem;">
+                Classes: <span class="text-info">dos, injection, mitm, password, normal...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Sensor Model -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-attacker p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small">SENSOR ANOMALY DETECTOR</span>
+                <span class="badge {% if models_status.sensor_model.available %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if models_status.sensor_model.available %}ONLINE{% else %}OFFLINE{% endif %}
+                </span>
+            </div>
+            <div class="fs-5 fw-bold text-light mb-1">Isolation Forest Model</div>
+            <div class="small text-muted" style="font-size: 0.78rem;">
+                Telemetry: <span class="text-info">temp, press, level, flow</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Continuous Simulations -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-attacker p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small">CONTINUOUS SCENARIOS</span>
+                <span class="badge {% if active_attacks|length > 0 %}badge-active{% else %}badge-idle{% endif %}" id="cont-total-badge">
+                    {{ active_attacks|length }} ACTIVE
+                </span>
+            </div>
+            <div class="fs-5 fw-bold text-light mb-1" id="stat-active-attacks">
+                {% if active_attacks|length > 0 %}{{ active_attacks|join(', ')|upper }}{% else %}None Running{% endif %}
+            </div>
+            <div class="small text-muted" style="font-size: 0.78rem;">
+                Background loop: <span class="text-info">1.0s telemetry interval</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Stored Alerts & Propagation -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-attacker p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small">DATABASE &amp; EMAIL DISPATCH</span>
+                <span class="badge bg-info text-dark">SYNCHRONIZED</span>
+            </div>
+            <div class="fs-5 fw-bold text-light mb-1 d-flex align-items-center">
+                <span id="stat-total-alerts">{{ history|length }}</span>
+                <span class="ms-2 fs-6 text-muted fw-normal">Portal Events</span>
+            </div>
+            <div class="small text-muted" style="font-size: 0.78rem;">
+                Queue: <span class="text-warning">Operator Website &amp; Automated Email</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: Simulated Account Access -->
+<div class="row g-3 mb-4" id="account-section">
+    <div class="col-12">
+        <div class="card card-attacker p-3" style="border-left: 4px solid #ffaa00; background-color: #0d121c;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-badge text-warning fs-5 me-2"></i>
+                    <strong class="text-light">Simulated Compromised Account Context (Demo Authorization)</strong>
+                </div>
+                <span class="badge bg-warning text-dark font-monospace">{{ simulated_account.synthetic_session_id }}</span>
+            </div>
+            <div class="row g-2 text-muted small" style="font-size: 0.8rem;">
+                <div class="col-md-3">
+                    <span class="text-secondary">Simulated Account:</span> <span class="text-light mono-font">{{ simulated_account.fictional_account }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-secondary">Target Role:</span> <span class="text-light">{{ simulated_account.target_role }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-secondary">Permitted Scope:</span> <span class="text-warning">{{ simulated_account.clearance_scope }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-secondary">Compromise Vector:</span> <span class="text-danger">{{ simulated_account.compromise_vector }}</span>
+                </div>
+            </div>
+            <div class="mt-2 text-secondary" style="font-size: 0.72rem;">
+                <i class="bi bi-shield-check text-success"></i> <strong>Safety Rule:</strong> Never collects or exposes real passwords, hashes, session cookies, or user private data. Operates strictly within local synthetic bounds.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3: Synthetic Target Information -->
+<div class="row g-3 mb-4" id="targets-section">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="text-light fw-bold mb-0">
+                <i class="bi bi-diagram-3-fill text-info me-2"></i>Synthetic SCADA Target Information (Lab Assets)
+            </h5>
+            <span class="text-muted small">Strictly bound to 127.0.0.1 mock industrial endpoints</span>
+        </div>
+    </div>
+    {% for key, tgt in targets.items() %}
+    <div class="col-lg-3 col-md-6">
+        <div class="card card-attacker p-3 h-100" style="border-top: 3px solid #3b82f6;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold text-light mono-font">{{ key }}</span>
+                <span class="badge bg-dark text-info border border-secondary">{{ tgt.protocol }}</span>
+            </div>
+            <div class="small text-muted mb-2">{{ tgt.name }}</div>
+            <div class="text-secondary small" style="font-size: 0.75rem;">
+                <div><strong class="text-light">Endpoint:</strong> <span class="mono-font">{{ tgt.ip }}{% if tgt.port %}:{{ tgt.port }}{% endif %}</span></div>
+                <div><strong class="text-light">Registers/Coils:</strong> <span class="mono-font">{{ tgt.registers }}</span></div>
+                <div><strong class="text-light">Lab Role:</strong> {{ tgt.role }}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Section 4: Four Isolated Attack Simulation Controls (SCADA Protocols & Process) -->
+<div class="row g-3 mb-4" id="scenarios-section">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="text-light fw-bold mb-0">
+                <i class="bi bi-shield-shaded text-danger me-2"></i>SCADA Protocol &amp; Physical Process Attack Scenarios
+            </h5>
+            <span class="text-muted small">Choose scenario parameters &bull; Click 'Launch' to trigger genuine detection</span>
+        </div>
+    </div>
+
+    <!-- Scenario 1: False Data Injection -->
+    <div class="col-lg-6 col-xl-3">
+        <div class="card card-attacker h-100 d-flex flex-column">
+            <div class="card-attacker-header">
+                <span class="text-light fw-bold"><i class="bi bi-virus text-danger me-1"></i> 1. False Data Injection</span>
+                <span class="badge {% if 'injection' in active_attacks %}badge-active{% else %}badge-idle{% endif %}" id="cont-badge-injection">
+                    {% if 'injection' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
+                </span>
+            </div>
+            <div class="p-3 flex-grow-1">
+                <div id="injection-error-msg" class="alert alert-danger p-2 mb-2 small d-none" style="font-size: 0.75rem;"></div>
+                <p class="small text-muted mb-2" style="font-size: 0.78rem;">
+                    Injects out-of-boundary sensor measurements or unauthorized register writes to disrupt SCADA control loops.
+                </p>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker">Target Node:</label>
+                    <select class="form-select form-select-attacker" id="inj-target">
+                        <option value="RTU_01">RTU_01 (Water Reservoir Gateway)</option>
+                        <option value="SENSOR_RACK_03">SENSOR_RACK_03 (Auxiliary Sensor Rack)</option>
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker">Select Synthetic Sensor:</label>
+                    <select class="form-select form-select-attacker" id="inj-sensor-type" onchange="updateFdiSensorSelection();">
+                        <option value="temp" selected>Core Temperature Sensor (TEMP_SENS_01)</option>
+                        <option value="press">System Pressure Sensor (PRESS_SENS_01)</option>
+                        <option value="level">Water Level Sensor (LEVEL_SENS_01)</option>
+                    </select>
+                </div>
+
+                <div class="p-2 mb-2 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.74rem;">
+                    <span class="text-muted">Original Synthetic Reading:</span>
+                    <div class="text-success fw-bold mono-font" id="inj-orig-display">35.0 °C (Nominal Operating Baseline)</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker" id="inj-val-label">Simulated Replacement Temperature (°C):</label>
+                    <input type="number" class="form-control form-control-attacker mono-font text-warning" id="inj-val-input" value="90.0" min="50" max="115" step="0.5">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-attacker">Modbus Function Code:</label>
+                    <select class="form-select form-select-attacker" id="inj-fc">
+                        <option value="16" selected>FC 16 - Preset Multiple Registers (Critical Write)</option>
+                        <option value="6">FC 06 - Write Single Register</option>
+                        <option value="3">FC 03 - Spoofed Readout Probe</option>
+                    </select>
+                </div>
+
+                <div class="p-2 mb-3 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.72rem;">
+                    <div class="text-muted"><i class="bi bi-cpu text-info"></i> Detection Pipeline:</div>
+                    <div class="text-light">&bull; <span class="badge badge-ml">ML</span> Isolation Forest Unsupervised Sensor Anomaly</div>
+                    <div class="text-light">&bull; <span class="badge badge-rule">RULE</span> Modbus Register Write Guard (FC-16 Check)</div>
+                </div>
+            </div>
+            <div class="p-3 pt-0 mt-auto">
+                <button class="btn btn-attacker-primary w-100 mb-2" id="btn-exec-injection" onclick="executeScenario('injection');">
+                    <i class="bi bi-play-circle-fill me-1"></i> Submit Injected Reading
+                </button>
+                <button class="btn btn-sm btn-outline-success w-100 mb-2" id="btn-restore-sensor" onclick="restoreSensorTelemetry();" title="Restore sensor reading back to normal baseline">
+                    <i class="bi bi-arrow-counterclockwise"></i> Restore Original Sensor Reading
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-attacker-secondary w-50" onclick="toggleContinuous('injection', 'start');">
+                        <i class="bi bi-arrow-repeat"></i> Loop Start
+                    </button>
+                    <button class="btn btn-sm btn-attacker-secondary w-50" onclick="toggleContinuous('injection', 'stop');">
+                        <i class="bi bi-stop-circle"></i> Loop Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenario 2: Replay Attack -->
+    <div class="col-lg-6 col-xl-3">
+        <div class="card card-attacker h-100 d-flex flex-column">
+            <div class="card-attacker-header">
+                <span class="text-light fw-bold"><i class="bi bi-arrow-repeat text-warning me-1"></i> 2. Replay Attack</span>
+                <span class="badge {% if 'replay' in active_attacks %}badge-active{% else %}badge-idle{% endif %}" id="cont-badge-replay">
+                    {% if 'replay' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
+                </span>
+            </div>
+            <div class="p-3 flex-grow-1">
+                <div id="replay-error-msg" class="alert alert-danger p-2 mb-2 small d-none" style="font-size: 0.75rem;"></div>
+                <p class="small text-muted mb-2" style="font-size: 0.78rem;">
+                    Replays previously recorded synthetic telemetry message with stale timestamps and repeated sequence numbers.
+                </p>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker">Target Endpoint:</label>
+                    <select class="form-select form-select-attacker" id="rep-target">
+                        <option value="RTU_01">RTU_01 (Remote Terminal Unit)</option>
+                        <option value="MTU_01">MTU_01 (Master SCADA Server)</option>
+                    </select>
+                </div>
+
+                <div class="p-2 mb-2 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.74rem;">
+                    <span class="text-muted">Recorded Telemetry Frame:</span>
+                    <div class="text-info mono-font">SEQ #1042 | FC-03 | Len: 48B</div>
+                    <div class="text-secondary small">Duplicate-sequence marker applied</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker">Stale Timestamp Delta:</label>
+                    <select class="form-select form-select-attacker" id="rep-stale">
+                        <option value="300">5 Minutes Ago (300s)</option>
+                        <option value="1200" selected>20 Minutes Ago (1,200s)</option>
+                        <option value="2700">45 Minutes Ago (2,700s)</option>
+                        <option value="7200">2 Hours Ago (7,200s)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-attacker">Burst Frame Count (1-20):</label>
+                    <input type="number" class="form-control form-control-attacker mono-font" id="rep-burst" value="5" min="1" max="20" step="1">
+                </div>
+
+                <div class="p-2 mb-3 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.72rem;">
+                    <div class="text-muted"><i class="bi bi-cpu text-info"></i> Detection Pipeline:</div>
+                    <div class="text-light">&bull; <span class="badge badge-rule">RULE</span> Stateful Sequence &amp; Monotonic Guard</div>
+                    <div class="text-light">&bull; <span class="badge badge-rule">RULE</span> Timestamp Freshness Delta Window (&gt;30s Limit)</div>
+                </div>
+            </div>
+            <div class="p-3 pt-0 mt-auto">
+                <button class="btn btn-attacker-primary w-100 mb-2" id="btn-exec-replay" onclick="executeScenario('replay');">
+                    <i class="bi bi-play-circle-fill me-1"></i> Launch Replay Attack
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-attacker-secondary w-50" onclick="toggleContinuous('replay', 'start');">
+                        <i class="bi bi-arrow-repeat"></i> Loop Start
+                    </button>
+                    <button class="btn btn-sm btn-attacker-secondary w-50" onclick="toggleContinuous('replay', 'stop');">
+                        <i class="bi bi-stop-circle"></i> Loop Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenario 3: MITM Simulation -->
+    <div class="col-lg-6 col-xl-3">
+        <div class="card card-attacker h-100 d-flex flex-column">
+            <div class="card-attacker-header">
+                <span class="text-light fw-bold"><i class="bi bi-shuffle text-info me-1"></i> 3. MITM Simulation</span>
+                <span class="badge {% if 'mitm' in active_attacks %}badge-active{% else %}badge-idle{% endif %}" id="cont-badge-mitm">
+                    {% if 'mitm' in active_attacks %}ACTIVE{% else %}IDLE{% endif %}
+                </span>
+            </div>
+            <div class="p-3 flex-grow-1">
+                <div id="mitm-error-msg" class="alert alert-danger p-2 mb-2 small d-none" style="font-size: 0.75rem;"></div>
+                <p class="small text-muted mb-2" style="font-size: 0.78rem;">
+                    Simulates communication between two local mock endpoints and tampers with control payloads in-transit.
+                </p>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker">Target Receiver Endpoint:</label>
+                    <select class="form-select form-select-attacker" id="mitm-target">
+                        <option value="PLC_01">PLC_01 (Safety Logic Controller)</option>
+                        <option value="RTU_01">RTU_01 (Remote Terminal Unit)</option>
+                    </select>
+                </div>
+
+                <div class="p-2 mb-2 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.74rem;">
+                    <div class="text-muted">Local Mock Endpoints:</div>
+                    <div class="text-info mono-font">RTU_01 <span class="text-warning">[TAP: INTERCEPTOR]</span> &rarr; PLC_01</div>
+                    <div class="text-secondary small mt-1">Orig: NORMAL_CYCLE &rarr; Tampered Payload</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-attacker">Tampered Payload Action:</label>
+                    <select class="form-select form-select-attacker" id="mitm-action">
+                        <option value="FORCED_EMERGENCY_SHUTDOWN_OVERRIDE">FORCED_EMERGENCY_SHUTDOWN_OVERRIDE</option>
+                        <option value="UNAUTHORIZED_VALVE_CLOSE">UNAUTHORIZED_VALVE_CLOSE</option>
+                        <option value="PROCESS_SETPOINT_CORRUPTION">PROCESS_SETPOINT_CORRUPTION</option>
+                        <option value="PUMP_FREQUENCY_HIJACK">PUMP_FREQUENCY_HIJACK</option>
+                    </select>
+                </div>
+
+                <div class="p-2 mb-3 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.72rem;">
+                    <div class="text-muted"><i class="bi bi-cpu text-info"></i> Detection Pipeline:</div>
+                    <div class="text-light">&bull; <span class="badge badge-ml">ML</span> RandomForest Classifier (Class: <span class="mono-font text-info">mitm</span>)</div>
+                    <div class="text-light">&bull; <span class="badge badge-rule">RULE</span> Cryptographic Integrity &amp; Actuator Relay Guard</div>
+                </div>
+            </div>
+            <div class="p-3 pt-0 mt-auto">
+                <button class="btn btn-attacker-primary w-100 mb-2" id="btn-exec-mitm" onclick="executeScenario('mitm');">
+                    <i class="bi bi-play-circle-fill me-1"></i> Launch MITM Attack
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-attacker-secondary w-50" onclick="toggleContinuous('mitm', 'start');">
+                        <i class="bi bi-arrow-repeat"></i> Loop Start
+                    </button>
+                    <button class="btn btn-sm btn-attacker-secondary w-50" onclick="toggleContinuous('mitm', 'stop');">
+                        <i class="bi bi-stop-circle"></i> Loop Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenario 4: DoS Flood Simulation -->
+    <div class="col-lg-6 col-xl-3">
+        <div class="card card-attacker h-100 d-flex flex-column">
+            <div class="card-attacker-header">
+                <span class="text-light fw-bold"><i class="bi bi-tsunami text-danger me-1"></i> 4. DoS Flood Simulation</span>
+                <span class="badge {% if 'dos' in active_attacks %}badge-active{% else %}badge-idle{% endif %}" id="cont-badge-dos">
+                    {% if 'dos' in active_attacks %}RUNNING{% else %}IDLE{% endif %}
+                </span>
+            </div>
+            <div class="p-3 flex-grow-1">
+                <div id="dos-error-msg" class="alert alert-danger p-2 mb-2 small d-none" style="font-size: 0.75rem;"></div>
+                <p class="small text-muted mb-2" style="font-size: 0.78rem;">
+                    Generates a bounded burst of synthetic requests against a local mock endpoint with conservative limits.
+                </p>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker">Target Mock Port:</label>
+                    <select class="form-select form-select-attacker" id="dos-target">
+                        <option value="RTU_01">RTU_01 (Modbus TCP Port 5020)</option>
+                        <option value="MTU_01">MTU_01 (Supervisory Server)</option>
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label-attacker d-flex justify-content-between">
+                        <span>Request Rate Limit:</span>
+                        <span class="text-warning mono-font" id="dos-rate-val">85.0 pkt/s</span>
+                    </label>
+                    <input type="range" class="form-range" id="dos-rate" min="45.0" max="120.0" step="5.0" value="85.0" oninput="document.getElementById('dos-rate-val').innerText = this.value + ' pkt/s';">
+                    <div class="d-flex justify-content-between text-muted small" style="font-size: 0.68rem;">
+                        <span>45 pkt/s (Lab Min)</span>
+                        <span>120 pkt/s (Lab Max)</span>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label-attacker">Frame Limit:</label>
+                        <input type="number" class="form-control form-control-attacker mono-font" id="dos-burst" value="25" min="5" max="50" step="5">
+                        <div class="text-muted" style="font-size: 0.65rem;">Max 50 packets</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-attacker">Duration (s):</label>
+                        <input type="number" class="form-control form-control-attacker mono-font" id="dos-duration" value="3" min="1" max="5" step="1">
+                        <div class="text-muted" style="font-size: 0.65rem;">Max 5s auto-stop</div>
+                    </div>
+                </div>
+
+                <div class="p-2 mb-3 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.72rem;">
+                    <div class="text-muted"><i class="bi bi-cpu text-info"></i> Detection Pipeline:</div>
+                    <div class="text-light">&bull; <span class="badge badge-ml">ML</span> RandomForest Classifier (Class: <span class="mono-font text-info">dos</span>)</div>
+                    <div class="text-light">&bull; <span class="badge badge-rule">RULE</span> Rate-Anomaly Surge Guard (&gt;40 pkt/s Limit)</div>
+                </div>
+            </div>
+            <div class="p-3 pt-0 mt-auto">
+                <div class="d-flex gap-2 mb-2">
+                    <button class="btn btn-attacker-primary w-50" id="btn-start-dos" onclick="startDoS();">
+                        <i class="bi bi-play-circle-fill me-1"></i> Start DoS
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger w-50" id="btn-stop-dos" onclick="stopDoS();" title="Stop DoS simulation loop">
+                        <i class="bi bi-stop-circle-fill me-1"></i> Stop DoS
+                    </button>
+                </div>
+                <button class="btn btn-sm btn-attacker-secondary w-100 mb-2" id="btn-exec-dos" onclick="executeScenario('dos');">
+                    <i class="bi bi-lightning-fill me-1"></i> Launch Bounded Burst (3s)
+                </button>
+                <button class="btn btn-sm btn-outline-danger w-100" onclick="stopDoSImmediately();" title="Immediate emergency simulation halt">
+                    <i class="bi bi-x-octagon-fill me-1"></i> Immediate Emergency Stop
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Section 5: Brute-Force Login Simulation & Account Protection -->
+<div class="row g-3 mb-4" id="bruteforce-section">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="text-light fw-bold mb-0">
+                <i class="bi bi-shield-lock-fill text-danger me-2"></i>5. Brute-Force Login Simulation &amp; Account Protection
+            </h5>
+            <span class="text-muted small">Server-side rate monitoring &bull; Threshold: 5 failed attempts in 5m &bull; Defensive Lockout</span>
+        </div>
+    </div>
+
+    <!-- Left Column: Simulation Controls & Live Counters -->
+    <div class="col-lg-7">
+        <div class="card card-attacker h-100 p-3" style="border-left: 4px solid #ef4444;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-light">
+                    <i class="bi bi-terminal-split text-danger me-1"></i> Credential Stuffing &amp; Password Guessing Console
+                </span>
+                <span class="badge badge-idle" id="bf-status-badge">STANDBY / IDLE</span>
+            </div>
+
+            <p class="small text-muted mb-3" style="font-size: 0.8rem;">
+                Simulates repeated unauthorized authentication attempts against synthetic demo operator accounts.
+                Evaluates server-side rate-limiting, triggers security incidents, dispatches email alerts, and activates defensive lockout.
+            </p>
+
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label-attacker">Target Operator Account:</label>
+                    <select class="form-select form-select-attacker mono-font" id="bf-target-account" onchange="updateSelectedAccountDisplay();">
+                        <option value="demo_operator@scada.local" selected>demo_operator@scada.local (Dedicated Lab Demo Account)</option>
+                        <option value="admin@scada.local">admin@scada.local (Administrator Account)</option>
+                        <option value="operator@scada.local">operator@scada.local (SCADA Operator)</option>
+                        <option value="supervisor@scada.local">supervisor@scada.local (Plant Supervisor)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label-attacker">Simulated Source IP / Identifier:</label>
+                    <input type="text" class="form-control form-control-attacker mono-font" id="bf-source-ip" value="192.168.1.105">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label-attacker d-flex justify-content-between">
+                    <span>Simulated Failed Login Attempts (1–10):</span>
+                    <span class="text-warning mono-font fw-bold" id="bf-attempts-val">5 Attempts</span>
+                </label>
+                <input type="range" class="form-range" id="bf-attempts-slider" min="1" max="10" step="1" value="5" oninput="document.getElementById('bf-attempts-val').innerText = this.value + ' Attempts';">
+                <div class="d-flex justify-content-between text-muted small" style="font-size: 0.7rem;">
+                    <span>1 Attempt (Below Threshold)</span>
+                    <span class="text-warning">5 Attempts (Alert Threshold &bull; Lockout)</span>
+                    <span>10 Attempts (High Volume)</span>
+                </div>
+            </div>
+
+            <!-- Live Attempt Counter Widgets -->
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <div class="p-2 rounded text-center" style="background-color: #0b0e14; border: 1px solid #1c2638;">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">ATTEMPTS SENT</span>
+                        <span class="fs-4 fw-bold text-info mono-font" id="bf-sent-count">0</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded text-center" style="background-color: #0b0e14; border: 1px solid #1c2638;">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">FAILED RESPONSES</span>
+                        <span class="fs-4 fw-bold text-danger mono-font" id="bf-failed-count">0</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded text-center" style="background-color: #0b0e14; border: 1px solid #1c2638;">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">ACCOUNT STATE</span>
+                        <span class="fs-6 fw-bold text-success mono-font d-block mt-1" id="bf-lock-state">UNLOCKED</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-attacker-primary flex-grow-1" id="btn-exec-bruteforce" onclick="executeBruteForceSimulation();">
+                    <i class="bi bi-play-circle-fill me-1"></i> Launch Brute-Force Attack
+                </button>
+                <button class="btn btn-sm btn-outline-warning" id="btn-stop-bruteforce" onclick="stopBruteForceSimulation();">
+                    <i class="bi bi-stop-circle"></i> Stop
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="resetSelectedAccountLockout();" title="Clear failed attempts counter and remove account lockout">
+                    <i class="bi bi-unlock-fill me-1"></i> Reset Account Lockout
+                </button>
+            </div>
+
+            <div class="mt-3 text-secondary" style="font-size: 0.72rem;">
+                <i class="bi bi-shield-check text-success"></i> <strong>Privacy &amp; Security Compliance:</strong>
+                Never collects, logs, or stores plaintext passwords or hashes. Public alerts mask target usernames (e.g. <span class="mono-font text-info">ad***n@scada.local</span>).
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Demo Accounts Live Status Table -->
+    <div class="col-lg-5">
+        <div class="card card-attacker h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-light">
+                    <i class="bi bi-people-fill text-warning me-1"></i> Demo Accounts Protection Monitor
+                </span>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="refreshAccountsStatus();">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <p class="small text-muted mb-2" style="font-size: 0.75rem;">
+                Active status of operator accounts monitored by server-side <span class="mono-font text-info">LoginMonitor</span>:
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-attacker mb-0" style="font-size: 0.75rem;">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>Failures</th>
+                            <th>Lockout State</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bf-accounts-status-tbody">
+                        {% for acc in simulated_accounts_status %}
+                        <tr>
+                            <td class="mono-font text-light">{{ acc.account }}</td>
+                            <td class="mono-font {% if acc.failed_attempts >= 5 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                {{ acc.failed_attempts }}/{{ acc.threshold }}
+                            </td>
+                            <td>
+                                {% if acc.is_locked %}
+                                <span class="badge bg-danger">LOCKED ({{ acc.remaining_seconds|round(0)|int }}s)</span>
+                                {% else %}
+                                <span class="badge bg-success">CLEAR</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info py-0 px-1" style="font-size: 0.7rem;" onclick="resetSpecificAccount('{{ acc.account }}');">
+                                    Unlock
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-2 mt-3 rounded" style="background-color: #0b0e14; border: 1px solid #1c2638; font-size: 0.72rem;">
+                <div class="text-muted"><i class="bi bi-info-circle text-info"></i> Mitigation Logic:</div>
+                <div class="text-secondary">&bull; 5 failures within 5m window triggers 5-minute lockout.</div>
+                <div class="text-secondary">&bull; Automatic security alert recorded with severity <span class="text-danger fw-bold">HIGH</span>.</div>
+                <div class="text-secondary">&bull; Automated email alert sent with subject: <span class="text-warning">[SCADA SECURITY ALERT] Multiple Failed Login Attempts Detected</span>.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 6: Quantum BB84 & AES-GCM Cryptographic Integration Architecture -->
+<div class="row g-3 mb-4" id="quantum-section">
+    <div class="col-12">
+        <div class="card card-attacker p-3" style="border-top: 4px solid #8b5cf6;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-shield-shaded text-purple fs-4 me-2" style="color: #a78bfa;"></i>
+                    <div>
+                        <h5 class="text-light fw-bold mb-0">Quantum BB84 Protocol &amp; AES-GCM Cryptographic Architecture</h5>
+                        <div class="text-muted small">Genuine cryptographic verification layer operating alongside ML intrusion detection</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-info" onclick="demonstrateBB84Diagnostic();">
+                        <i class="bi bi-activity me-1"></i> Trace BB84 Quantum Channel
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="demonstrateAESTagTamper();">
+                        <i class="bi bi-shield-x me-1"></i> Verify AES-GCM Tag Rejection
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-3 text-secondary small">
+                <!-- Layer 1: BB84 QKD Protocol -->
+                <div class="col-md-4">
+                    <div class="p-3 rounded h-100" style="background-color: #0b0e14; border: 1px solid #1c2638;">
+                        <div class="text-light fw-bold mb-1 d-flex align-items-center">
+                            <i class="bi bi-shuffle text-info me-2"></i> 1. Quantum BB84 Key Exchange
+                        </div>
+                        <p class="mb-2" style="font-size: 0.75rem;">
+                            Generates random polarization photons in Rectilinear (+) and Diagonal (x) bases. Sifts matching bases and calculates Quantum Bit Error Rate (QBER).
+                        </p>
+                        <div class="p-2 rounded mono-font" style="background-color: #121927; font-size: 0.72rem;">
+                            <div>&bull; QBER Abort Threshold: <span class="text-warning">11.0%</span></div>
+                            <div>&bull; Eavesdropping (Eve): <span class="text-danger">QBER ~25.0%</span> &rarr; Aborted</div>
+                            <div>&bull; Sifted Material &rarr; HKDF-SHA256 &rarr; 256-bit AES Key</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layer 2: AES-256-GCM Cipher -->
+                <div class="col-md-4">
+                    <div class="p-3 rounded h-100" style="background-color: #0b0e14; border: 1px solid #1c2638;">
+                        <div class="text-light fw-bold mb-1 d-flex align-items-center">
+                            <i class="bi bi-lock-fill text-success me-2"></i> 2. AES-256-GCM Authenticated Cipher
+                        </div>
+                        <p class="mb-2" style="font-size: 0.75rem;">
+                            Encrypts SCADA payloads using genuine AES-GCM. Generates a fresh 96-bit nonce per message and binds 128-bit authentication tag with context AAD.
+                        </p>
+                        <div class="p-2 rounded mono-font" style="background-color: #121927; font-size: 0.72rem;">
+                            <div>&bull; Tampered Payload: Throws <span class="text-danger">InvalidTag</span></div>
+                            <div>&bull; Independent of ML: Immediate cryptographic drop</div>
+                            <div>&bull; Session Lifetime: 3,600s automatic key rotation</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layer 3: Protocol Freshness & Sequence -->
+                <div class="col-md-4">
+                    <div class="p-3 rounded h-100" style="background-color: #0b0e14; border: 1px solid #1c2638;">
+                        <div class="text-light fw-bold mb-1 d-flex align-items-center">
+                            <i class="bi bi-clock-history text-warning me-2"></i> 3. Stateful Freshness &amp; Sequence
+                        </div>
+                        <p class="mb-2" style="font-size: 0.75rem;">
+                            Defends against Replay Attacks. Evaluates monotonic message sequence numbers and timestamp delta against maximum 30-second freshness window.
+                        </p>
+                        <div class="p-2 rounded mono-font" style="background-color: #121927; font-size: 0.72rem;">
+                            <div>&bull; Duplicate Sequence: Flagged &amp; Dropped</div>
+                            <div>&bull; Stale Timestamp (&gt;30s): Rejected</div>
+                            <div>&bull; Replayed Valid Ciphertext: Discarded safely</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 7: Live Adversary Terminal & Detection Diagnostic Output -->
+<div class="row g-3 mb-4" id="terminal-section">
+    <div class="col-12">
+        <div class="card card-attacker">
+            <div class="terminal-header">
+                <div>
+                    <span class="term-dot dot-red"></span>
+                    <span class="term-dot dot-yellow"></span>
+                    <span class="term-dot dot-green"></span>
+                    <span class="text-light fw-bold ms-2">LIVE ADVERSARY DIAGNOSTIC CONSOLE &bull; REAL-TIME ML &amp; RULE DETECTOR TRACE</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary" style="font-size: 0.7rem;">Direct Event Hook</span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="clearTerminal();">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+            <div class="terminal-window" id="adversary-terminal-body">
+[SYSTEM READY] SCADA Adversary Emulation & Penetration Testing Engine initialized.
+[TARGETS] Virtual Nodes Active: RTU_01 (Modbus:5020), PLC_01 (Internal:Relays), MTU_01 (Master:Polling), SENSOR_RACK_03.
+[MODELS] RandomForest Classifier (network_intrusion_pipeline.joblib) & IsolationForest (sensor_anomaly_pipeline.joblib) loaded.
+[DIAGNOSTIC] Ready to dispatch scenarios. Select an attack above and click 'Launch' to trace synthetic event execution.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 8: Simulation Execution History Table -->
+<div class="row g-3" id="history-section">
+    <div class="col-12">
+        <div class="card card-attacker">
+            <div class="card-attacker-header">
+                <span class="text-light fw-semibold">
+                    <i class="bi bi-clock-history text-danger me-2"></i>Simulation Execution Log (Database Persisted)
+                </span>
+                <span class="text-muted small">Synchronized with Operator Dashboard Alert Queue &bull; Shared Database</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-attacker">
+                    <thead>
+                        <tr>
+                            <th>Alert ID</th>
+                            <th>Timestamp</th>
+                            <th>Scenario</th>
+                            <th>Target</th>
+                            <th>Detection Engine</th>
+                            <th>Severity</th>
+                            <th>Confidence</th>
+                            <th>Detection Details &amp; Diagnosis</th>
+                            <th>Cross-Verify</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attacker-history-tbody">
+                        {% for item in history %}
+                        {% set al = item.persisted_alert %}
+                        {% set det = item.detection %}
+                        {% set is_ml = 'ML' in det.detection_method or 'HYBRID' in det.detection_method %}
+                        <tr>
+                            <td class="mono-font text-info">{{ al.alert_id }}</td>
+                            <td class="mono-font" style="color: #cbd5e1; font-size: 0.8rem;">{{ item.timestamp }}</td>
+                            <td><span class="badge bg-danger">{{ item.scenario|upper }}</span></td>
+                            <td class="mono-font text-light" style="font-size: 0.8rem;">{{ item.target }}</td>
+                            <td>
+                                <span class="badge {% if is_ml %}badge-ml{% else %}badge-rule{% endif %}">
+                                    {% if is_ml %}ML DETECTOR{% else %}RULE GUARD{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if al.severity == 'CRITICAL' or al.severity == 'HIGH' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                    {{ al.severity }}
+                                </span>
+                            </td>
+                            <td class="mono-font text-light">{{ (det.confidence * 100)|round(1) }}%</td>
+                            <td style="font-size: 0.78rem; max-width: 280px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="{{ al.details }}">
+                                {{ al.details }}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-attacker-secondary" onclick="verifyAlert('{{ al.alert_id }}');" title="Cross-verify in shared database">
+                                    <i class="bi bi-shield-check text-success"></i> Verify
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr id="no-history-row">
+                            <td colspan="9" class="text-center text-muted py-4">
+                                No attacks dispatched yet from this session. Launch any scenario above to execute the real detector pipeline and persist alerts.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
