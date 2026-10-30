@@ -432,4 +432,4 @@ git push origin main
 
 ## 11. License
 
-This educational research prototype is developed for academic laboratory demonstration, multi-device cybersecurity training, and critical infrastructure evaluation.
+This educational research prototype is developed for academic laboratory demonstration, multi-device cybersecurity training, and critical infrastructure evaluation. [LICENSE.md](LICENSE.md)
